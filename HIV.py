@@ -588,4 +588,5 @@ def cal_sij(tag):
             else:
                 sij = 0
             fsij.write('%s,%s,%s,%s,%s,%s\n'%(variant_i,poly_alle,variant_j,poly_alle,sij,dis));
+            
     fsij.close();

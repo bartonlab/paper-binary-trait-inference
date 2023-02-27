@@ -8,7 +8,6 @@ import matplotlib as mpl
 import random
 
 # GitHub
-MPL_DIR = 'src/MPL'
 HIV_DIR = 'data/HIV'
 SIM_DIR = 'data/simulation'
 FIG_DIR = 'figures'

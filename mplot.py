@@ -64,7 +64,7 @@ sizesublabel = 8+1
 sizetext     = 6
 sizelabel    = 6
 sizetick     = 6
-smallsizedot = 6.
+smallsizedot = 6
 
 ## grant
 #fontfamily   = 'Arial'

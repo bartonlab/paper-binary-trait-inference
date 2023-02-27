@@ -222,8 +222,8 @@ def plot_figure_1(**pdata):
 
     var_c = sns.husl_palette(len(po_site))
 
-    traj_legend_x  =  350
-    traj_legend_y  = [0.75, 0.50]
+    traj_legend_x  =  700
+    traj_legend_y  = [0.65, 0.40]
     traj_legend_t  = ['trait\nfrequency','individual \nallele frequency']
 
     for k in range(len(traj_legend_y)):
