@@ -3,10 +3,11 @@
 This repository contains data and scripts for reproducing the results accompanying the manuscript
 
 ### Inferring selection for HIV-1 escape from T cell responses using a binary trait model
-Yirui Gao<sup>1</sup>, and John P. Barton<sup>2,#</sup>
+Yirui Gao<sup>1</sup>, and John P. Barton<sup>2,3,#</sup>
 
 <sup>1</sup> Department of Physics and Astronomy, University of California, Riverside  
-<sup>2</sup> Department of Computational and Systems Biology, University of Pittsburgh School of Medicine  
+<sup>2</sup> Department of Physics and Astronomy, University of Pittsburgh  
+<sup>3</sup> Department of Computational and Systems Biology, University of Pittsburgh School of Medicine  
 <sup>#</sup> correspondence to [jpbarton@pitt.edu](mailto:jpbarton@pitt.edu)
 
 
