@@ -7,3 +7,14 @@ __pycache__
 .DS_Store
 */.DS_Store
 */*/.DS_Store
+
+# 
+data_old/
+newtry.ipynb
+try.py
+/figures/sim
+data/HIV/
+data/simulation
+
+# Large file
+

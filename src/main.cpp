@@ -5,8 +5,6 @@
 #include "inf.h"    // inference declarations
 #include "io.h"     // input/output
 
-
-
 /*********************************************************************
  
                     COMMAND LINE INPUT FORMAT
@@ -50,15 +48,20 @@
     the case of a model with multiple states. If used, then the
     number of states q will be set by the dimensions of the matrix.
 
- -p: string
+ -e: string
     Default: "po.dat"
-    The location of the file containing the polygenic site information, 
+    The location of the file containing the trait site information, 
     in the case of a model with multiple states.
 
- -ps: string
+ -es: string
     Default: "poSequence.dat"
-    The location of the file containing the polygenic sequence 
+    The location of the file containing the trait sequence 
     information, in the case of a model with multiple states.
+
+ -ed: string
+    Default: "poDis.dat"
+    The location of the file containing the distance between
+    two trait sites.
 
  -t: real number
     Default: 0.05
@@ -74,9 +77,13 @@
     Population size.
  
  -mu: real number
-    Default: 1.0e-4
+    Default: 2.0e-4
     Mutation rate per generation.
-    
+
+ -rr: real number
+    Default: 2.0e-4
+    recombination rate per generation.
+
  -q: integer
     Default: 2
     Number of allowed states (e.g. different amino acids) for each 
@@ -91,8 +98,6 @@
  -v: none
     Enable verbose output.
 
-
- 
  *********************************************************************/
 
 
@@ -107,24 +112,23 @@ int main(int argc, char *argv[]) {
     for (int i=1;i<argc;i++) {
         
         // Location of input/output files
-
-        if      (strcmp(argv[i],"-d")==0)  { if (++i==argc) break; else r.directory  = argv[i];                     }
-        else if (strcmp(argv[i],"-i")==0)  { if (++i==argc) break; else r.infiles.push_back(argv[i]);               }
-        else if (strcmp(argv[i],"-o")==0)  { if (++i==argc) break; else r.outfile    = argv[i];                     }
-        else if (strcmp(argv[i],"-m")==0)  { if (++i==argc) break; else { r.muInfile = argv[i]; r.useMatrix=true; } }
-        else if (strcmp(argv[i],"-p")==0)  { if (++i==argc) break; else { r.poInfile = argv[i];                   } }
-        else if (strcmp(argv[i],"-ps")==0) { if (++i==argc) break; else { r.poSequence = argv[i];                 } }
+        if      (strcmp(argv[i],"-d")==0)  { if (++i==argc) break; else r.directory  = argv[i];                     }// directory
+        else if (strcmp(argv[i],"-i")==0)  { if (++i==argc) break; else r.infiles.push_back(argv[i]);               }// input file name
+        else if (strcmp(argv[i],"-o")==0)  { if (++i==argc) break; else r.outfile    = argv[i];                     }// output file name
+        else if (strcmp(argv[i],"-m")==0)  { if (++i==argc) break; else { r.muInfile = argv[i]; r.useMatrix=true; } }// mutation matrix
+        else if (strcmp(argv[i],"-e")==0)  { if (++i==argc) break; else r.traitInfile = argv[i];                    }// trait sites
+        else if (strcmp(argv[i],"-es")==0) { if (++i==argc) break; else r.traitSequence = argv[i];                  }// WT sequences for trait groups
+        else if (strcmp(argv[i],"-ed")==0) { if (++i==argc) break; else r.traitDis = argv[i];                       }// distance between 2 trait sites
 
         // Regularization strength and parameter settings
-        
         else if (strcmp(argv[i],"-t")==0)  { if (++i==argc) break; else r.tol   = strtodouble(argv[i]);             }
-        else if (strcmp(argv[i],"-g")==0)  { if (++i==argc) break; else r.gamma = strtodouble(argv[i]);             }
-        else if (strcmp(argv[i],"-N")==0)  { if (++i==argc) break; else r.N     = strtodouble(argv[i]);             }
-        else if (strcmp(argv[i],"-mu")==0) { if (++i==argc) break; else r.mu    = strtodouble(argv[i]);             }
-        else if (strcmp(argv[i],"-q")==0)  { if (++i==argc) break; else r.q     = strtoint(argv[i]);                }
+        else if (strcmp(argv[i],"-g")==0)  { if (++i==argc) break; else r.gamma = strtodouble(argv[i]);             }// regularization force
+        else if (strcmp(argv[i],"-N")==0)  { if (++i==argc) break; else r.N     = strtodouble(argv[i]);             }// population number
+        else if (strcmp(argv[i],"-mu")==0) { if (++i==argc) break; else r.mu    = strtodouble(argv[i]);             }// mutation rate
+        else if (strcmp(argv[i],"-rr")==0) { if (++i==argc) break; else r.rr    = strtodouble(argv[i]);             }// recombination rate
+        else if (strcmp(argv[i],"-q")==0)  { if (++i==argc) break; else r.q     = strtoint(argv[i]);                }// states
         
         // Optional output/processing
-        
         else if (strcmp(argv[i],"-nc")==0) { r.useCovariance  = false;                                                       }
         else if (strcmp(argv[i],"-sc")==0) { if (++i==argc) break; else { r.covOutfile = argv[i]; r.saveCovariance = true; } }
         else if (strcmp(argv[i],"-sn")==0) { if (++i==argc) break; else { r.numOutfile = argv[i]; r.saveNumerator  = true; } }

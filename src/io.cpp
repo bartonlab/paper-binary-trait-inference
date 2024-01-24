@@ -8,7 +8,7 @@
 
 /**********  I N P U T  **********/
 
-// Retrieve sequences, counts, and generation times from a file (format in main.cpp and examples/)
+// Retrieve sequences, counts, and generation times from a file (format in main.cpt and examples/)
 // FUTURE: Make robust to incorrect time ordering by replacing IntVectors with maps from double (time) to IntVector
 
 void getSequences(FILE *input, IntVVector &sequences, Vector &counts, std::vector<double> &times) {
@@ -57,13 +57,13 @@ void getSequences(FILE *input, IntVVector &sequences, Vector &counts, std::vecto
     
     for (int i=0;i<sequences.size();i++) { for (int j=0;j<sequences[i].size();j++) {
     
-        assert(length==sequences[i][j].size() && "io.cpp - getSequences: read in sequence vectors with unequal lengths");
+        assert(length==sequences[i][j].size() && "io.cpt - getSequences: read in sequence vectors with unequal lengths");
         
     } }
     
     // debug
-    assert(sequences.size()==counts.size() && "io.cpp - getSequences: unequal lengths for sequences and counts");
-    assert(sequences.size()==times.size()  && "io.cpp - getSequences: unequal lengths for sequences and times");
+    assert(sequences.size()==counts.size() && "io.cpt - getSequences: unequal lengths for sequences and counts");
+    assert(sequences.size()==times.size()  && "io.cpt - getSequences: unequal lengths for sequences and times");
     
 }
 
@@ -94,7 +94,6 @@ void expandSequences(int q, IntVVector &sequences) {
 
 
 // Retrieve a mutation matrix from a file
-
 void getMu(FILE *input, Vector &mu) {
 
     char c;
@@ -123,14 +122,14 @@ void getMu(FILE *input, Vector &mu) {
     
     for (int i=0;i<mu.size();i++) {
     
-        assert(length==mu[i].size() && "io.cpp - getMu: read in mutation matrix that is not square");
+        assert(length==mu[i].size() && "io.cpt - getMu: read in mutation matrix that is not square");
         
     }
     
 }
 
-
-void getPo(FILE* input, IntVector& po) {
+// Get trait site information (sites, TF sequence, distance between 2 trait sites)
+void getTrait(FILE* input, IntVector& po) {
 
     char c;
     int i;
@@ -154,30 +153,6 @@ void getPo(FILE* input, IntVector& po) {
 
 }
 
-
-void getPoSequences(FILE *input, IntVector &poS) {
-
-    char c;
-    int i;
-    double d;
-    
-    while (fscanf(input, "%d", &i) == 1) {
-
-        poS.push_back(std::vector<int>());
-        poS.back().push_back(i);
-
-        while (fscanf(input, "%c", &c) == 1) {
-
-            if (c == '\n' || c == '\r') break;
-
-            fscanf(input, "%d", &i);
-            poS.back().push_back(i);
-
-        }
-
-    }
-
-}
 
 /**********  O U T P U T  **********/
 

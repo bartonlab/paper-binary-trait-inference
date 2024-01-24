@@ -16,8 +16,7 @@
 void getSequences(FILE *input, IntVVector &sequences, Vector &counts, std::vector<double> &times);
 void expandSequences(int q, IntVector &sequences);
 void getMu(FILE *input, Vector &mu);
-void getPo(FILE* input, IntVector &po);
-void getPoSequences(FILE *input, IntVector &poS);
+void getTrait(FILE* input, IntVector &po);
 
 // Output
 void printSelectionCoefficients(FILE *output, const std::vector<double> &s);
@@ -27,11 +26,9 @@ void printNumerator(FILE* output, double dx[], int L);
 // Auxiliary
 void insertInPlace(std::vector<double> &, double);
 
-
 // STRING MANIPULATION
 
 // Converts generic to string
-
 template <class T>
 
 inline std::string tostring (const T& t) {
@@ -42,9 +39,7 @@ inline std::string tostring (const T& t) {
     
 }
 
-
 // Converts a string to an integer
-
 inline int strtoint(const std::string &s) {
     
     std::istringstream i(s);
@@ -55,9 +50,7 @@ inline int strtoint(const std::string &s) {
     
 }
 
-
-// Converts a string to a double
-
+// Converts a string to a double 
 inline double strtodouble(const std::string &s) {
     
     std::istringstream i(s);
@@ -67,6 +60,5 @@ inline double strtodouble(const std::string &s) {
     return x;
 
 }
-
 
 #endif

@@ -58,7 +58,7 @@ sizedot      = 8.
 sizeline     = 0.8
 textcolor    = defcolor
 
-# # paper
+# paper
 fontfamily   = 'Arial'
 sizesublabel = 8+1
 sizetext     = 6
@@ -75,7 +75,7 @@ smallsizedot = 6
 #smallsizedot = 6. * 2
 #sizeline     = 1
 
-# slides/poster
+# # slides/poster
 # fontfamily   = 'Avenir'
 # sizesublabel = 18
 # sizetext     = 18

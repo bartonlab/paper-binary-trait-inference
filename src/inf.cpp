@@ -6,49 +6,49 @@
 #include <gsl/gsl_linalg.h>
 #include <chrono>
 
+#include <iostream>
+#include <vector>
+#include <Eigen/Dense>
+
 #include "inf.h"    // inference declarations
 #include "io.h"     // input/output
-
 
 // typedef std::chrono::high_resolution_clock Clock;
 bool useDebug = false;
 
-
 // Compute single and pair allele frequencies from binary sequences and counts
-
 void computeAlleleFrequencies(const IntVector &sequences,        // vector of sequence vectors in one generation
                               const std::vector<double> &counts, // vector of sequence counts
-                              const IntVector &poly_sites,       // vector about escape site information
-                              const IntVector &poly_sequence,    // vector about escape sequence information
+                              const IntVector &trait_sites,       // vector about escape site information
+                              const IntVector &trait_sequence,    // vector about escape sequence information
                               int q,                   // number of states (e.g., number of nucleotides or amino acids)
                               std::vector<double> &p1, // single allele frequencies
                               std::vector<double> &p2, // pair allele frequencies
-                              std::vector<double> &pp  // escape term frequencies
+                              std::vector<double> &pt  // escape term frequencies
                               ) {
 
     // Set frequencies to zero
-
     for (int a=0;a<p1.size();a++) p1[a] = 0;
     for (int a=0;a<p2.size();a++) p2[a] = 0;
-    for (int a=0;a<pp.size();a++) pp[a] = 0;
+    for (int a=0;a<pt.size();a++) pt[a] = 0;
 
     int L  = (int) sequences[0].size(); //length of the genotype
     int LL = (int) p1.size(); // length of allele frequencies vector
-    int nP = (int) poly_sites.size(); //number of escape group
+    int ne = (int) trait_sites.size(); //number of escape group
 
     // Iterate through sequences and count the frequency of each state at each site,
     // and the frequency of each pair of states at each pair of sites
 
     for (int k=0;k<sequences.size();k++) { //genotypes in one generation, k:type
 
-        std::vector<int> polyvalue(nP,0);
+        std::vector<int> traitvalue(ne,0);
 
-        for (int nn=0; nn<nP;nn++){
+        for (int nn=0; nn<ne;nn++){
 
-            for (int po=0;po<poly_sites[nn].size();po++){
+            for (int po=0;po<trait_sites[nn].size();po++){
 
-                int po_site = (int)poly_sites[nn][po];
-                polyvalue[nn] += abs(sequences[k][po_site] - poly_sequence[nn][po]);
+                int po_site = (int)trait_sites[nn][po];
+                traitvalue[nn] += abs(sequences[k][po_site] - trait_sequence[nn][po]);
 
             }
 
@@ -68,7 +68,7 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
                 p2[(b * LL) + a] += counts[k]; //pair allele frequencies (symmetry matrix)
             }
 
-            for (int nn=0; nn<nP;nn++){ if (polyvalue[nn] != 0) {
+            for (int nn=0; nn<ne;nn++){ if (traitvalue[nn] != 0) {
 
                     int bb = L * q + nn; // sequence length * allele number
 
@@ -78,13 +78,13 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
             }}
         }
 
-        for (int nn=0; nn<nP;nn++){ if (polyvalue[nn] != 0){
+        for (int nn=0; nn<ne;nn++){ if (traitvalue[nn] != 0){
 
             int aa =  L * q + nn;//site for escape term
 
             p1[aa] += counts[k]; //single allele frequencies - escape part
 
-            for (int mm=nn+1; mm<nP;mm++){ if (polyvalue[mm] != 0){
+            for (int mm=nn+1; mm<ne;mm++){ if (traitvalue[mm] != 0){
 
                 int bb =  L * q + mm;
 
@@ -96,11 +96,11 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
             int site = 0;
             int n_mutations = 0;//mutation number in the escape group
 
-            for (int po=0; po<(int) poly_sites[nn].size(); po++){
+            for (int po=0; po<(int) trait_sites[nn].size(); po++){
 
-                int po_site = poly_sites[nn][po];
+                int po_site = trait_sites[nn][po];
 
-                if (sequences[k][po_site] != poly_sequence[nn][po]){
+                if (sequences[k][po_site] != trait_sequence[nn][po]){
 
                     n_mutations += 1;
                     site = po_site;
@@ -111,18 +111,68 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
             if (n_mutations == 1){
 
                 int qq = (int)sequences[k][site];
-                pp[ ((nn * L) + site ) * q + qq] += counts[k];
+                pt[ ((nn * L) + site ) * q + qq] += counts[k];
 
             }
-
         }}
     }
-
 }
 
+// Calculate frequencies for recombination part (binary case)
+void computeRecFrequencies(const IntVector &sequences,        // vector of sequence vectors in one generation
+                           const std::vector<double> &counts, // vector of sequence counts
+                           const IntVector &trait_sites,      // vector about escape site information
+                           const IntVector &trait_sequence,   // vector about escape sequence information
+                           std::vector<double>& pk            // frequencies for recombination part
+                           ) {
+    
+    // Set frequencies to zero
+    for (int a=0;a<pk.size();a++) pk[a] = 0;
+
+    int L  = (int) sequences[0].size(); //length of the genotype, sequence length
+    int LL = (int) pk.size(); // length of pk
+    int ne = (int) trait_sites.size(); //number of escape group
+    
+    // Iterate through sequences and count the frequency for recombination term
+    for (int n=0; n<ne;n++){ // for different trait groups
+        
+        int n_length = (int)trait_sites[n].size();             // length for escape group n
+        Eigen::VectorXf sWT_n(n_length), sVec_n(n_length);
+        
+        // wild type sequence for escape group n 
+        for (int i = 0; i < n_length; i++) sWT_n[i] = trait_sequence[n][i];    
+
+        for (int k=0;k<sequences.size();k++) { //genotypes in one generation, k:type
+            
+            for (int ii = 0; ii < n_length; ii++) {
+                int po_site = trait_sites[n][ii];                   // index for trait sites
+                sVec_n[ii] = sequences[k][po_site]; // escape group n sequence for genotype_k
+            }
+
+            for (int nn = 0; nn < n_length - 1; nn++) {
+                int k_bp = nn + 1;   // break point k
+                int index_k = trait_sites[n][nn];                   // index for trait sites
+
+                // MT before and after break point k
+                if (sWT_n.head(k_bp) != sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) != sVec_n.tail(n_length - k_bp)) {
+                    pk[n * L * 3 + index_k * 3 + 0] += counts[k];
+                }
+                
+                // # MT before break point k and WT after break point k
+                if (sWT_n.head(k_bp) != sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) == sVec_n.tail(n_length - k_bp)) {
+                    pk[n * L * 3 + index_k * 3 + 1] += counts[k];
+                }
+                
+                // # WT before break point k and MT after break point k
+                if (sWT_n.head(k_bp) == sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) != sVec_n.tail(n_length - k_bp)) {
+                    pk[n * L * 3 + index_k * 3 + 2] += counts[k];
+                }
+            }
+        }
+    }
+}
 
 // Update the summed covariance matrix
-
 void updateCovarianceIntegrate(double dg, // time step
                                const std::vector<double> &p1_0, // single allele frequencies
                                const std::vector<double> &p2_0, // pair allele frequencies
@@ -148,30 +198,26 @@ void updateCovarianceIntegrate(double dg, // time step
             totalCov[(b * LL) + a] += dCov1 + dCov2;
 
         }
-
     }
-
 }
-
 
 // Update the summed mutation vector (flux out minus flux in)
 // Note: since first row of mutation matrix is the reference, the mutation matrix is SHIFTED wrt frequencies,
 // because the reference frequency is not explicitly tracked
-
 void updateMuIntegrate(double dg, // time step
                        int L, //sequence length
                        const Vector &muMatrix, // mutation matrix
-                       const IntVector &poly_sites, // vector about escape information
-                       const IntVector &poly_sequence,    // vector about escape sequence information
+                       const IntVector &trait_sites, // vector about escape information
+                       const IntVector &trait_sequence,    // vector about escape sequence information
                        const std::vector<double> &p1_0, // single allele frequencies
-                       const std::vector<double> &pp_0, // single allele frequencies
+                       const std::vector<double> &pt_0, // escape term frequencies
                        const std::vector<double> &p1_1, // single allele frequencies
-                       const std::vector<double> &pp_1, // single allele frequencies
+                       const std::vector<double> &pt_1, // escape term frequencies
                        std::vector<double> &totalMu // contribution to selection estimate from mutation
                        ) {
 
     int  q = (int) muMatrix.size();   // number of tracked alleles (states)
-    int nP = (int) poly_sites.size(); // number of escape goups
+    int ne = (int) trait_sites.size(); // number of escape goups
 
     for (int i=0;i<L;i++) {
 
@@ -186,6 +232,7 @@ void updateMuIntegrate(double dg, // time step
                 fluxOut += 0.5 * (p1_0[(i * q) + a] + p1_1[(i * q) + a]) * muMatrix[a][b];
 
             }
+
             for (int b=a+1;b<q;b++) {
 
                 fluxIn  += 0.5 * (p1_0[(i * q) + b] + p1_1[(i * q) + b]) * muMatrix[b][a];
@@ -193,114 +240,153 @@ void updateMuIntegrate(double dg, // time step
 
             }
 
-            totalMu[(i * q) + a] += dg * (fluxOut - fluxIn);
+            totalMu[(i * q) + a] += dg * (fluxIn - fluxOut);
 
         }
-
     }
 
-    for (int nn=0; nn<nP; nn++){
+    for (int nn=0; nn<ne; nn++){
 
-        for (int po=0;po<poly_sites[nn].size();po++){
+        for (int po=0;po<trait_sites[nn].size();po++){
 
-            int  TF_index = poly_sequence[nn][po];
-            int  po_site = (int) poly_sites[nn][po];
-
+            int  TF_index = trait_sequence[nn][po];
+            int  po_site = (int) trait_sites[nn][po];
 
             for (int b=0;b<TF_index;b++) {
 
                 double x_in  = 1 - 0.5 * ( p1_0[(L * q) + nn] + p1_1[(L * q) + nn]);
-                double x_out = (pp_0[((nn * L) + po_site) * q + b]+pp_1[((nn * L) + po_site) * q + b])*0.5;
-                totalMu[(L * q) + nn] += dg * (x_out * muMatrix[b][TF_index] - x_in * muMatrix[TF_index][b]);
+                double x_out = (pt_0[((nn * L) + po_site) * q + b]+pt_1[((nn * L) + po_site) * q + b])*0.5;
+                totalMu[(L * q) + nn] += dg * (x_in * muMatrix[TF_index][b] - x_out * muMatrix[b][TF_index]);
 
             }
 
             for (int b=TF_index+1;b<q;b++) {
 
                 double x_in  = 1 - 0.5 * ( p1_0[(L * q) + nn] + p1_1[(L * q) + nn]);
-                double x_out = (pp_0[((nn * L) + po_site) * q + b]+pp_1[((nn * L) + po_site) * q + b])*0.5;
-                totalMu[(L * q) + nn] += dg * (x_out * muMatrix[b][TF_index] - x_in * muMatrix[TF_index][b]);
+                double x_out = (pt_0[((nn * L) + po_site) * q + b]+pt_1[((nn * L) + po_site) * q + b])*0.5;
+                totalMu[(L * q) + nn] += dg * (x_in * muMatrix[TF_index][b] - x_out * muMatrix[b][TF_index]);
 
             }
+        }
+    }
+} 
+
+void updateComIntegrate(double dg,                       // time step
+                        int L,                           // sequence length
+                        int q,                           // number of states (e.g., number of nucleotides or amino acids)
+                        double r_rate,                   // recombination rate
+                        const IntVector &trait_sites,    // vector about escape information
+                        const IntVector &trait_sequence, // vector about escape sequence information
+                        const IntVector &trait_dis,      // vector about escape sequence information
+                        const std::vector<double> &p1_0, // single allele frequencies
+                        const std::vector<double> &pk_0, // frequencies for recombination part
+                        const std::vector<double> &p1_1, // single allele frequencies
+                        const std::vector<double> &pk_1, // frequencies for recombination part
+                        std::vector<double> &totalCom    // contribution to selection estimate from mutation
+                        ) {
+
+    int ne = (int) trait_sites.size(); // number of escape goups
+
+    for (int n = 0; n < ne; n++) {
+        
+        double fluxIn  = 0;
+        double fluxOut = 0;
+
+        for (int nn = 0; nn < trait_sites[n].size() - 1; nn++) {
+
+            int aa   = n * L * 3 + trait_sites[n][nn] * 3;
+            fluxIn  += trait_dis[n][nn] * (1 - (p1_0[L * q + n]+p1_1[L * q + n])/2) * (pk_0[aa + 0]+pk_1[aa + 0])/2;
+            fluxOut += trait_dis[n][nn] * (pk_0[aa + 1] + pk_1[aa + 1]) * (pk_0[aa + 2] + pk_1[aa + 2])/4;
 
         }
-
+        totalCom[(L * q) + n] += dg * r_rate * (fluxIn - fluxOut);
     }
-
 }
 
-
 // Process standard sequences (time series)
-
-void processStandard(const IntVVector &sequences, // vector of sequence vectors
-                     const Vector &counts, // vector of sequence counts
+void processStandard(const IntVVector &sequences,      // vector of sequence vectors
+                     const Vector &counts,             // vector of sequence counts
                      const std::vector<double> &times, // sequence sampling times
-                     const Vector &muMatrix, // matrix of mutation rates
-                     const IntVector &poly_sites, // matrix of escape sites
-                     const IntVector &poly_sequence,    // vector about escape sequence information
-                     int q, // number of states (e.g., number of nucleotides or amino acids)
-                     double totalCov[], // integrated covariance matrix
-                     double dx[] // selection estimate numerator
+                     const Vector &muMatrix,           // matrix of mutation rates
+                     const IntVector &trait_sites,     // matrix of escape sites
+                     const IntVector &trait_sequence,  // vector about escape sequence information
+                     const IntVector &trait_dis,       // vector about escape sequence information
+                     int q,                            // number of states (e.g., number of nucleotides or amino acids)
+                     double r_rate,                    // recombination rate
+                     double totalCov[],                // integrated covariance matrix
+                     double dx[]                       // selection estimate numerator
                      ) {
 
     int L  = ((int) sequences[0][0].size());        // sequence length (i.e. number of tracked alleles)
-    int nP = ((int) poly_sites.size());             // escape groups
-    int LL =  L * q + nP;                           // length of allele frequency vector
+    int ne = ((int) trait_sites.size());            // trait groups
+    int LL =  L * q + ne;                           // length of allele frequency vector
     std::vector<double> totalMu(LL,0);              // accumulated mutation term
+    std::vector<double> totalCom(LL,0);             // accumulated recombination term
     std::vector<double> p1(LL,0);                   // current allele frequency vector
     std::vector<double> p2(LL*LL,0);                // current allele pair frequencies
-    std::vector<double> pp(L*nP*q,0);                // current escape term frequencies
-    std::vector<double> lastp1(LL,0);             // previous allele frequency vector
-    std::vector<double> lastp2(LL*LL,0);          // previous allele pair frequencies
-    std::vector<double> lastpp(L*nP*q,0);          // previous escape term frequencies
+    std::vector<double> pt(L*ne*q,0);               // current escape term frequencies
+    std::vector<double> pk(L*ne*3,0);               // current frequencies for recombination part
+    std::vector<double> lastp1(LL,0);               // previous allele frequency vector
+    std::vector<double> lastp2(LL*LL,0);            // previous allele pair frequencies
+    std::vector<double> lastpt(L*ne*q,0);           // previous escape term frequencies
+    std::vector<double> lastpk(L*ne*3,0);           // previous frequencies for recombination part
 
     // set initial allele frequency and covariance then loop
-    computeAlleleFrequencies(sequences[0], counts[0], poly_sites, poly_sequence, q, lastp1, lastp2,lastpp);
-    for (int a=0;a<LL;a++) dx[a] -= lastp1[a];
+    computeAlleleFrequencies(sequences[0], counts[0], trait_sites, trait_sequence, q, lastp1, lastp2,lastpt);
+    computeRecFrequencies(sequences[0], counts[0], trait_sites, trait_sequence,lastpk) ;
+
+    for (int a=0;a<LL;a++) dx[a] -= lastp1[a]; // dx -= x[t_0]
 
     for (int k=1;k<sequences.size();k++) {
 
-        computeAlleleFrequencies(sequences[k], counts[k], poly_sites, poly_sequence, q, p1, p2, pp);
+        computeAlleleFrequencies(sequences[k], counts[k], trait_sites, trait_sequence, q, p1, p2, pt);
+        computeRecFrequencies(sequences[k], counts[k], trait_sites, trait_sequence,pk);
         updateCovarianceIntegrate(times[k] - times[k-1], lastp1, lastp2, p1, p2, totalCov);
-        updateMuIntegrate(times[k] - times[k-1], L, muMatrix, poly_sites, poly_sequence, lastp1, lastpp, p1, pp, totalMu);
+        updateMuIntegrate(times[k] - times[k-1], L, muMatrix, trait_sites, trait_sequence, lastp1, lastpt, p1, pt, totalMu);
+        updateComIntegrate(times[k] - times[k-1], L, q, r_rate, trait_sites, trait_sequence, trait_dis, lastp1, lastpk, p1, pk, totalCom);
 
-        if (k==sequences.size()-1) { for (int a=0;a<LL;a++) dx[a] += p1[a]; }//add last generation term
-        else { lastp1 = p1; lastp2 = p2; lastpp = pp;}
+        if (k==sequences.size()-1) { for (int a=0;a<LL;a++) dx[a] += p1[a]; }// dx += x[t_K]
+
+        else { lastp1 = p1; lastp2 = p2; lastpt = pt; lastpk = pk;}
 
     }
 
     // Gather dx and totalMu terms
+    for (int a=0;a<LL;a++) dx[a] -= (totalMu[a] + totalCom[a]);
 
-    for (int a=0;a<LL;a++) dx[a] += totalMu[a];
+    std::cout << "\nNumerator for escape part is\n";
+    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] << " ";
+
+    std::cout << "\nNumerator for escape part without recombination part is\n";
+    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalCom[L * q + a]<< " ";
+
+    std::cout << "\nNumerator for escape part without mutation part is\n";
+    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalMu[L * q + a]<< " ";
+
+    std::cout << "\n";
 
 }
 
 
 // Add Gaussian regularization for selection coefficients (modifies integrated covariance)
-
 void regularizeCovariance(const IntVVector &sequences, // vector of sequence vectors
-                          int nP, //number of poly sites
+                          int ne, //number of poly sites
                           int q, // number of states (e.g., number of nucleotides or amino acids)
-                          double gammaN, // normalized regularization strength
+                          double gamma, // normalized regularization strength
                           double totalCov[] // integrated covariance matrix
                           ) {
 
     int L = ((int) sequences[0][0].size()) ;
-    int LL = L * q + nP;
+    int LL = L * q + ne;
 
-    for (int a=0  ;a<L*q   ;a++) totalCov[(a * LL) + a] += gammaN; // standard regularization (selection part)
-    for (int b=L*q;b<L*q+nP;b++) totalCov[(b * LL) + b] += 1; // standard regularization (escape part)
-    //for (int a=0;a<LL;a++) totalCov[(a * LL) + a] += gammaN; // standard regularization (no gauged state)
-
+    for (int a=0  ;a<L*q   ;a++) totalCov[(a * LL) + a] += gamma;    // standard regularization (individual part)
+    for (int b=L*q;b<L*q+ne;b++) totalCov[(b * LL) + b] += gamma/10; // standard regularization (escape part)
+    // for (int b=L*q;b<L*q+ne;b++) totalCov[(b * LL) + b] += gamma; // standard regularization (escape part)
 }
 
-
 // MAIN PROGRAM
-
 int run(RunParameters &r) {
-
     // READ IN SEQUENCES FROM DATA
-
     IntVVector sequences;       // set of integer sequences at each time point
     Vector counts;              // counts for each sequence at each time point
     std::vector<double> times;  // list of times of measurements
@@ -308,9 +394,9 @@ int run(RunParameters &r) {
     if (FILE *datain = fopen(r.getSequenceInfile().c_str(),"r")) { getSequences(datain, sequences, counts, times); fclose(datain); }
     else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getSequenceInfile().c_str()); return EXIT_FAILURE; }
 
-    Vector muMatrix;    // matrix of mutation rates
-
-    if (r.useMatrix) {
+    // MUTATION MATRIX
+    Vector muMatrix;    
+    if (r.useMatrix) { // from input file to get mutation matrix
 
         if (FILE *muin = fopen(r.getMuInfile().c_str(),"r")) { getMu(muin, muMatrix); fclose(muin); }
         else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getMuInfile().c_str()); return EXIT_FAILURE; }
@@ -318,31 +404,33 @@ int run(RunParameters &r) {
         r.q = (int) muMatrix.size();
 
     }
-    else {
+    else { // no input file, use mutation rate mu to get the mutation matrix
 
         muMatrix.resize(r.q, std::vector<double>(r.q, r.mu));
         for (int i=0;i<r.q;i++) muMatrix[i][i] = 0;
 
     }
 
-    IntVector poly_sites; //sites that are escape groups
+    // TRAIT INFORMATION (trait sites, TF trait sequences, distance between 2 trait sites)
+    IntVector trait_sites; // trait sites
+    if (FILE *poin = fopen(r.getTraitInfile().c_str(),"r"))  { getTrait(poin, trait_sites); fclose(poin);}
+    else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getTraitInfile().c_str()); return EXIT_FAILURE; }
 
-    if (FILE *poin = fopen(r.getPoInfile().c_str(),"r")) { getPo(poin, poly_sites); fclose(poin);}
-    else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getPoInfile().c_str()); return EXIT_FAILURE; }
+    IntVector trait_sequence; // TF trait sequences
+    if (FILE *poin = fopen(r.getTraitSInfile().c_str(),"r")) { getTrait(poin, trait_sequence); fclose(poin);}
+    else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getTraitSInfile().c_str()); return EXIT_FAILURE; }
 
-    IntVector poly_sequence; //sites that are escape groups
-
-    if (FILE *poin = fopen(r.getPoSInfile().c_str(),"r")) { getPoSequences(poin, poly_sequence); fclose(poin);}
-    else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getPoSInfile().c_str()); return EXIT_FAILURE; }
-
+    IntVector trait_dis; // TF trait sequences
+    if (FILE *poin = fopen(r.getTraitDInfile().c_str(),"r")) { getTrait(poin, trait_dis); fclose(poin);}
+    else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getTraitDInfile().c_str()); return EXIT_FAILURE; }
 
     // PROCESS SEQUENCES
-
     int    L         = ((int) sequences[0][0].size()) ;         // sequence length (i.e. number of tracked alleles)
-    int    nP        = ((int) poly_sites.size());               // escape groups
-    int    LL        =  L * r.q + nP;                            // length of allele frequency vector
+    int    ne        = ((int) trait_sites.size());              // escape groups
+    int    LL        =  L * r.q + ne;                           // length of allele frequency vector
     double tol       = r.tol;                                   // tolerance for changes in covariance between time points
-    double gammaN    = r.gamma/r.N;                             // regularization strength divided by population size
+    double gamma     = r.gamma;                                 // regularization strength for individual locus
+    double r_rate    = r.rr;                                    // recombination rate
     double *dx       = new double[LL];                          // difference between start and end allele frequencies
     double *totalCov = new double[LL*LL];                       // accumulated allele covariance matrix
 
@@ -352,13 +440,10 @@ int run(RunParameters &r) {
     // _ START TIMER
     // auto t_start = Clock::now();
 
-    //if (r.useAsymptotic) processAsymptotic(sequences, counts, muMatrix, r.q, totalCov, dx);
-    //else
-    processStandard(sequences, counts, times, muMatrix, poly_sites, poly_sequence, r.q, totalCov, dx);
+    processStandard(sequences, counts, times, muMatrix, trait_sites, trait_sequence, trait_dis, r.q, r.rr, totalCov, dx);
 
     // If there is more than one input trajectory, loop through all of them and add contributions
     // NOTE: CURRENT CODE ASSUMES THAT ALL VALUES OF N ARE EQUAL
-
     if (r.infiles.size()>1) { for (int k=1;k<r.infiles.size();k++) {
 
         // Reset trajectory variables and reload them with new data
@@ -371,31 +456,26 @@ int run(RunParameters &r) {
         else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getSequenceInfile().c_str()); return EXIT_FAILURE; }
 
         // Add contributions to dx and totalCov
-
-        processStandard(sequences, counts, times, muMatrix, poly_sites, poly_sequence, r.q, totalCov, dx);
+        processStandard(sequences, counts, times, muMatrix, trait_sites, trait_sequence, trait_dis, r.q, r.rr, totalCov, dx);
 
     } }
 
     // REGULARIZE
-
-    regularizeCovariance(sequences, nP, r.q, gammaN, totalCov);
+    regularizeCovariance(sequences, ne, r.q, gamma, totalCov);
 
     // RECORD COVARIANCE (optional)
-
     if (r.saveCovariance) {
         if (FILE *dataout = fopen(r.getCovarianceOutfile().c_str(),"w")) { printCovariance(dataout, totalCov, LL); fclose(dataout); }
         else { printf("Problem writing data to file %s! File may not be created or cannot be opened.\n",r.getCovarianceOutfile().c_str()); return EXIT_FAILURE; }
     }
 
     // RECORD NUMERATOR (optional)
-
     if (r.saveNumerator) {
         if (FILE *dataout = fopen(r.getNumeratorOutfile().c_str(),"w")) { printNumerator(dataout, dx, LL); fclose(dataout); }
         else { printf("Problem writing data to file %s! File may not be created or cannot be opened.\n",r.getCovarianceOutfile().c_str()); return EXIT_FAILURE; }
     }
 
     // INFER THE SELECTION COEFFICIENTS -- solve Cov . sMAP = dx
-
     std::vector<double> sMAP(LL,0);
 
     if (r.useCovariance) {
@@ -428,11 +508,9 @@ int run(RunParameters &r) {
 
     // auto t_end = Clock::now();
     // ^ END TIMER
-
     // printf("%lld\n",std::chrono::duration_cast<std::chrono::nanoseconds>(t_end - t_start).count());
 
     // WRITE TO FILE
-
     if (FILE *dataout = fopen(r.getSelectionCoefficientOutfile().c_str(),"w")) { printSelectionCoefficients(dataout, sMAP); fclose(dataout); }
     else { printf("Problem writing data to file %s! File may not be created or cannot be opened.\n",r.getSelectionCoefficientOutfile().c_str()); return EXIT_FAILURE; }
 
