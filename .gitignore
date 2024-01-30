@@ -8,16 +8,16 @@ __pycache__
 */.DS_Store
 */*/.DS_Store
 
-# 
-data_old/
+# Unnecessary files 
 newtry.ipynb
 try.py
-/figures/sim
-data/HIV/
-data/simulation/
+figures/sim/
+data/simulation/jobs/output_multiple
+data/simulation/jobs/output_python
 
-# Large file
+# Large files
 data/simulation/jobs/
 data/HIV/input/sequence/7*/
 data/HIV/output/7*/
 data/HIV/raw/
+*.json

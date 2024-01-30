@@ -115,7 +115,7 @@ def read_file(name):
             trait[i][j] = int(trait[i][j])
     return trait
 
-def plot_figure_1(**pdata):
+def plot_example_mpl(**pdata):
     """
     Example evolutionary trajectory for a 50-site system and inferred selection coefficients
     and trait coefficients, together with aggregate properties for different levels of sampling..
@@ -123,27 +123,27 @@ def plot_figure_1(**pdata):
 
     # unpack passed data
 
-    n_gen   = pdata['n_gen']
-    dg      = pdata['dg']
-    N       = pdata['N']
-    xfile   = pdata['xfile']
+    n_gen    = pdata['n_gen']
+    dg       = pdata['dg']
+    pop_size = pdata['N']
+    xfile    = pdata['xfile']
 
-    n_ben = pdata['n_ben']
-    n_neu = pdata['n_neu']
-    n_del = pdata['n_del']
-    n_tra = pdata['n_tra']
-    s_ben = pdata['s_ben']
-    s_neu = pdata['s_neu']
-    s_del = pdata['s_del']
-    s_tra = pdata['s_tra']
+    n_ben    = pdata['n_ben']
+    n_neu    = pdata['n_neu']
+    n_del    = pdata['n_del']
+    n_tra    = pdata['n_tra']
+    s_ben    = pdata['s_ben']
+    s_neu    = pdata['s_neu']
+    s_del    = pdata['s_del']
+    s_tra    = pdata['s_tra']
 
     r_seed = pdata['r_seed']
     np.random.seed(r_seed)
 
+    show_fig = pdata['show_fig']
     # load and process data files
 
     data  = np.loadtxt('%s/jobs/sequences/example-%s.dat' % (SIM_DIR, xfile))
-    times = np.unique(data.T[0]) # get all time point
 
     x_index = xfile.split('_')[0]
     trait_site = read_file('traitsite/traitsite-%s.dat'%(x_index))
@@ -163,15 +163,15 @@ def plot_figure_1(**pdata):
     for t in range(0, n_gen, dg):
         idx    = data.T[0]==t
         t_num  = data[idx].T[1].T
-        t_fre     = [];
+        t_fre     = []
         for i in range(len(trait_site)):
-            t_data_i  = t_num*0;
+            t_data_i  = t_num*0
             for j in range(len(trait_site[i])):
-                site = trait_site[i][j];
+                site = trait_site[i][j]
                 t_data_i += data[idx].T[site+2]
             for k in range(len(t_data_i)):
                 if t_data_i[k] != 0:
-                    t_data_i[k] = 1;
+                    t_data_i[k] = 1
             t_freq_i = np.einsum('i,i', t_num, t_data_i) / float(np.sum(t_num))
             t_fre.append(t_freq_i)
         y.append(t_fre)
@@ -179,21 +179,19 @@ def plot_figure_1(**pdata):
 
     s_true  = [s_ben for i in range(n_ben)] + [0 for i in range(n_neu)]
     s_true += [s_del for i in range(n_del)] + [s_tra for i in range(n_tra)]
-    # s_inf   = np.loadtxt('%s/sc-example-1-1.dat' %SIM_DIR)
-
-    seq_length = n_ben+n_neu+n_del
+    
     # binary case
     s_inf      = np.loadtxt('%s/jobs/output/sc-%s.dat' %(SIM_DIR,x_index))
 
     # multiple case
-    # s_origin   = np.loadtxt('%s/jobs/output/sc-%s.dat' %(SIM_DIR,x_index))
+    # s_origin   = np.loadtxt('%s/jobs/output_multiple/sc-%s.dat' %(SIM_DIR,x_index))
     # s_inf   = np.zeros(seq_length+len(trait_site))
     # for i in range(seq_length):
     #     s_inf[i] = s_origin[2*i+1] - s_origin[2*i]
     # s_inf[-2:] = s_origin[-2:]
 
     cov     = np.loadtxt('%s/jobs/covariance/covariance-%s.dat' %(SIM_DIR,x_index))
-    ds      = np.linalg.inv(cov) / N
+    ds      = np.linalg.inv(cov) / pop_size
 
     # PLOT FIGURE
 
@@ -217,7 +215,6 @@ def plot_figure_1(**pdata):
     ax_tra2 = plt.subplot(gs_tra2[0, 0])
     ax_coe1 = plt.subplot(gs_coe1[0, 0])
     ax_coe2 = plt.subplot(gs_coe2[0, 0])
-
 
     dx = -0.03
     dy = -0.02
@@ -403,11 +400,14 @@ def plot_figure_1(**pdata):
     ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig1.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    # plt.savefig('%s/sim/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    # print('figure 1 done.')
+    if show_fig:
+        plt.savefig('%s/fig1.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        print('figure 1 done.')
+    else:
+        plt.savefig('%s/sim/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        plt.close()
 
-def plot_figure_2(**pdata):
+def plot_histogram_sim(**pdata):
     """
     histogram of selection coefficients and trait coefficients
     """
@@ -431,19 +431,19 @@ def plot_figure_2(**pdata):
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
     box_se   = dict(left=0.10, right=0.62, bottom=0.65, top=0.95)
-    box_po   = dict(left=0.69, right=0.92, bottom=0.65, top=0.95)
+    box_tra   = dict(left=0.69, right=0.92, bottom=0.65, top=0.95)
     box_aur1 = dict(left=0.10, right=0.32, bottom=0.07, top=0.50)
     box_aur2 = dict(left=0.40, right=0.62, bottom=0.07, top=0.50)
     box_erro = dict(left=0.70, right=0.92, bottom=0.07, top=0.50)
 
     gs_se   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_se)
-    gs_po   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_po)
+    gs_tra   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra)
     gs_aur1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_aur1)
     gs_aur2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_aur2)
     gs_erro = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_erro)
 
     ax_se  = plt.subplot(gs_se[0, 0])
-    ax_po  = plt.subplot(gs_po[0, 0])
+    ax_tra  = plt.subplot(gs_tra[0, 0])
     ax_aur1 = plt.subplot(gs_aur1[0, 0])
     ax_aur2 = plt.subplot(gs_aur2[0, 0])
     ax_erro = plt.subplot(gs_erro[0, 0])
@@ -453,13 +453,13 @@ def plot_figure_2(**pdata):
 
     ### plot histogram
 
-    df_all = pd.read_csv('%s/mpl_collected_all.csv' % SIM_DIR, memory_map=True)
-    df     = df_all[(df_all.ns==1000) & (df_all.delta_t==1)]
+    df_all   = pd.read_csv('%s/mpl_collected_nsdt.csv' % SIM_DIR, memory_map=True)
+    df       = df_all[(df_all.ns==1000) & (df_all.delta_t==1)]
 
     ben_cols = ['sc_%d' % i for i in range(n_ben)]
     neu_cols = ['sc_%d' % i for i in range(n_ben, n_ben+n_neu)]
     del_cols = ['sc_%d' % i for i in range(n_ben+n_neu, n_ben+n_neu+n_del)]
-    tra_cols = ['pc_%d' % i for i in range(n_tra)]
+    tra_cols = ['tc_%d' % i for i in range(n_tra)]
 
     colors     = [C_BEN, C_NEU, C_DEL]
     tags       = ['beneficial', 'neutral', 'deleterious','trait']
@@ -509,11 +509,11 @@ def plot_figure_2(**pdata):
 
     x = [np.array(df[cols[3]]).flatten()]
     tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
-    ax_po.text(s_true_loc[3], 0.159, r'$s_{%s}$' % (tags[3]), color=C_group[0], **tprops)
-    ax_po.axvline(x=s_true_loc[3], **dashlineprops)
-    mp.plot(type='hist', ax=ax_po, x=x, colors=[C_group[0]], **pprops)
+    ax_tra.text(s_true_loc[3], 0.159, r'$s_{%s}$' % (tags[3]), color=C_group[0], **tprops)
+    ax_tra.axvline(x=s_true_loc[3], **dashlineprops)
+    mp.plot(type='hist', ax=ax_tra, x=x, colors=[C_group[0]], **pprops)
 
-    ax_po.text( box_po['left']+dx,  box_po['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    ax_tra.text( box_tra['left']+dx,  box_tra['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     ## c,d  -- AUCs for inferring beneficial/deleterious mutations and error for trait part
 
@@ -524,14 +524,14 @@ def plot_figure_2(**pdata):
 
     AUC_matrix_ben = np.zeros((len(dt_vals), len(ns_vals)))
     AUC_matrix_del = np.zeros((len(dt_vals), len(ns_vals)))
-    err_matrix_pol = np.zeros((len(dt_vals), len(ns_vals)))
+    err_matrix_tra = np.zeros((len(dt_vals), len(ns_vals)))
 
     for i in range(len(dt_vals)):
         for j in range(len(ns_vals)):
             df_AUC = df[(df.delta_t==dt_vals[i]) & (df.ns==ns_vals[j])]
             AUC_matrix_ben[i, j] = np.mean(df_AUC.AUROC_ben)
             AUC_matrix_del[i, j] = np.mean(df_AUC.AUROC_del)
-            err_matrix_pol[i, j] = np.mean(df_AUC.error_pol)
+            err_matrix_tra[i, j] = np.mean(df_AUC.error_tra)
 
     pprops = { 'xlim'        : [0, len(dt_vals)],
                'xticks'      : np.arange(len(dt_vals))+0.5,
@@ -560,11 +560,11 @@ def plot_figure_2(**pdata):
             ax_aur2.text(i+0.5, j+0.5, '%.2f' % (AUC_matrix_del[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_aur2, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
-    ax_erro.pcolor(err_matrix_pol.T, vmin=0.2, vmax=0.8, cmap='GnBu', alpha=0.75)
-    for i in range(len(err_matrix_pol)):
-        for j in range(len(err_matrix_pol[0])):
+    ax_erro.pcolor(err_matrix_tra.T, vmin=0.2, vmax=0.8, cmap='GnBu', alpha=0.75)
+    for i in range(len(err_matrix_tra)):
+        for j in range(len(err_matrix_tra[0])):
             tc = 'k'
-            ax_erro.text(i+0.5, j+0.5, '%.2f' % (err_matrix_pol[i,j]), color=tc, **tprops)
+            ax_erro.text(i+0.5, j+0.5, '%.2f' % (err_matrix_tra[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_erro, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
     ## outside text labels
@@ -587,7 +587,7 @@ def plot_figure_2(**pdata):
     plt.savefig('%s/fig2.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure 2 done.')
 
-def plot_sc_for_trait_sites(**pdata):
+def plot_sc_escape(**pdata):
     """
     a. Histogram of selection coefficients for trait sites with group term
     b. Histogram of selection coefficients for trait sites without group term
@@ -595,7 +595,7 @@ def plot_sc_for_trait_sites(**pdata):
 
     # unpack passed data
     tags   = pdata['tags']
-    ppts   = pdata['ppts']
+
     # get all selection coefficients for trait sites
     sc_all         = []
     sc_all_notrait = []
@@ -629,7 +629,8 @@ def plot_sc_for_trait_sites(**pdata):
 
     histprops = dict(histtype='bar', lw=SIZELINE/2, rwidth=0.8, ls='solid', alpha=0.6, edgecolor='none')
     pprops = { 'xlim'        : [ -0.05,  0.10],
-               'xticks'      : [],
+               'xticks'      : [ -0.05,     0,  0.05, 0.1],
+               'xticklabels' : [ ],
                'ylim'        : [0., 0.30],
                'yticks'      : [0., 0.10, 0.20, 0.30],
                'ylabel'      : 'Frequency',
@@ -638,16 +639,14 @@ def plot_sc_for_trait_sites(**pdata):
                'plotprops'   : histprops,
                'axoffset'    : 0.1,
                'theme'       : 'boxed' }
-
+    
     # without escape term
     x    = [np.array(sc_all_notrait)]
     mp.plot(type='hist', ax=ax_old, x=x, colors=[C_group[1]], **pprops)
-
+    
     # with escape term
-    pprops['xlabel'] = 'Inferred selection coefficient for escape sites, ' + r'$\hat{s}$ ' +'(%)'
-    pprops['xticks'] = [ -0.05,     0,  0.05, 0.1]
     pprops['xticklabels'] = [    -5,     0,    5,   10]
-
+    pprops['xlabel'] = 'Inferred selection coefficient for escape sites, ' + r'$\hat{s}$ ' +'(%)'
     x    = [np.array(sc_all)]
     mp.plot(type='hist', ax=ax_new, x=x, colors=[C_group[0]], **pprops)
 
@@ -655,50 +654,43 @@ def plot_sc_for_trait_sites(**pdata):
     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
     ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
-    labelprops = dict(color=BKCOLOR, ha='center', va='top', family=FONTFAMILY, size=SIZELABEL,clip_on=False, transform=fig.transFigure)
-    ax_old.text(0.02, 0.2, 'Without escape trait', **DEF_LABELPROPS)
-    ax_new.text(0.02, 0.2, 'With escape trait', **DEF_LABELPROPS)
+    ax_old.text(0.02, 0.21, 'Without escape trait', **DEF_LABELPROPS)
+    ax_new.text(0.02, 0.21, 'With escape trait', **DEF_LABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/sc_all.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.savefig('%s/sc_escape.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
 
-def plot_sc_for_trait_sites_rec(**pdata):
+def plot_tc_rec(**pdata):
     """
-    a. Histogram of selection coefficients for trait sites with recombination
-    b. Histogram of selection coefficients for trait sites without recombination
+    a. Histogram of trait coefficients with recombination
+    b. Histogram of trait coefficients without recombination
     """
 
     # unpack passed data
     tags   = pdata['tags']
-    ppts   = pdata['ppts']
-    # get all selection coefficients for trait sites
-    sc_all       = []
-    sc_all_norec = []
+
+    # get all trait coefficients
+    tc_all     = []
+    tc_all_noR = []
 
     for tag in tags:
-        df          = pd.read_csv('%s/analysis/%s-analyze.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        df_escape   = df[(df['epitope'].notna()) & (df['escape'] == True)]
-        for i in range(len(df_escape)):
-            sc_all.append(df_escape.iloc[i].sc_MPL)
-
-        df_old     = pd.read_csv('data_old/HIV/analysis/%s-analyze.csv'%tag, comment='#', memory_map=True)
-        df_e_old   = df[(df['epitope'].notna()) & (df['escape'] == True)]
-        for i in range(len(df_escape)):
-            sc_all_norec.append(df_escape.iloc[i].sc_MPL)
+        df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        df_tc_noR = pd.read_csv('%s/noR/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        unique_epitopes = df_tc['epitope'].unique()
+        for epitope in unique_epitopes:
+            tc_all.append(df_tc[df_tc.epitope == epitope].iloc[0].tc_MPL)
+            tc_all_noR.append(df_tc_noR[df_tc_noR.epitope == epitope].iloc[0].tc_MPL)
 
     # PLOT FIGURE
     ## set up figure grid
-
     w     = SINGLE_COLUMN
-    goldh = w / 1.1
+    goldh = w / 1.5
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_old = dict(left=0.15, right=0.92, bottom=0.12, top=0.42)
-    box_new = dict(left=0.15, right=0.92, bottom=0.55, top=0.92)
-
-    gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
+    box_old = dict(left=0.15, right=0.92, bottom=0.55, top=0.90)
+    box_new = dict(left=0.15, right=0.92, bottom=0.15, top=0.50)
     gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
-
+    gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
     ax_old  = plt.subplot(gs_old[0, 0])
     ax_new  = plt.subplot(gs_new[0, 0])
 
@@ -708,35 +700,38 @@ def plot_sc_for_trait_sites_rec(**pdata):
     ### plot histogram - with and without escape term
 
     histprops = dict(histtype='bar', lw=SIZELINE/2, rwidth=0.8, ls='solid', alpha=0.6, edgecolor='none')
-    pprops = { 'xlim'        : [ -0.05,  0.10],
-               'xticks'      : [ -0.05,     0,  0.05, 0.1],
-               'xticklabels' : [    -5,     0,    5,   10],
-               'ylim'        : [0., 0.30],
-               'yticks'      : [0., 0.10, 0.20, 0.30],
+    pprops = { 'xlim'        : [ -0.05,  0.30],
+               'xticks'      : [ -0.05,     0,  0.05, 0.1 , 0.15,  0.2, 0.25, 0.30],
+               'xticklabels' : [ ],
+               'ylim'        : [0., 0.20],
+               'yticks'      : [0., 0.10, 0.20],
                'ylabel'      : 'Frequency',
-               'bins'        : np.arange(-0.05, 0.10, 0.002),
+               'bins'        : np.arange(-0.05, 0.30, 0.005),
                'combine'     : True,
                'plotprops'   : histprops,
                'axoffset'    : 0.1,
                'theme'       : 'boxed' }
 
-    # with escape term
-    pprops['xlabel'] = 'Inferred selection coefficient for escape sites, ' + r'$\hat{s}$ ' +'(%) (with recombination term)'
-    x    = [np.array(sc_all)]
-    mp.plot(type='hist', ax=ax_new, x=x, colors=[C_group[0]], **pprops)
-
     # without escape term
-    pprops['xlabel'] = 'Inferred selection coefficient for escape sites, ' + r'$\hat{s}$ ' +'(%) (without recombination term)'
-    x    = [np.array(sc_all_norec)]
+    x    = [np.array(tc_all_noR)]
     mp.plot(type='hist', ax=ax_old, x=x, colors=[C_group[1]], **pprops)
 
-    ax_new.text(box_new['left']+dx, box_new['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
-    ax_old.text(box_old['left']+dx, box_old['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    # with escape term
+    pprops['xticklabels'] = [    -5,     0,    5,   10,   15,   20,   25,   30]
+    pprops['xlabel'] = 'Inferred escape coefficient, ' + r'$\hat{s}$ ' +'(%)'
+    x    = [np.array(tc_all)]
+    mp.plot(type='hist', ax=ax_new, x=x, colors=[C_group[0]], **pprops)
+
+    ax_old.text(0.113, 0.14, 'Without recombination', **DEF_LABELPROPS)
+    ax_new.text(0.113, 0.14, 'With recombination', **DEF_LABELPROPS)
+
+    ax_old.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    ax_new.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/sc_all_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.savefig('%s/tc_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
 
-def plot_figure_3(**pdata):
+def plot_histogram_fraction_HIV(**pdata):
     """
     a. Histogram of selection coefficients and escape coefficients
     b. Fraction for escape part
@@ -747,15 +742,15 @@ def plot_figure_3(**pdata):
     ppts   = pdata['ppts']
 
     # get all escape coefficients
-    pc = []
+    tc = []
 
     for tag in tags:
-        df_pc = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        pc_old = df_pc.iloc[0].pc_MPL
-        for i in range(len(df_pc)):
-            if df_pc.iloc[i].pc_MPL != pc_old:
-                pc.append(df_pc.iloc[i].pc_MPL)
-            pc_old = df_pc.iloc[i].pc_MPL
+        df_tc = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        tc_old = df_tc.iloc[0].tc_MPL
+        for i in range(len(df_tc)):
+            if df_tc.iloc[i].tc_MPL != tc_old:
+                tc.append(df_tc.iloc[i].tc_MPL)
+            tc_old = df_tc.iloc[i].tc_MPL
 
     # get all escape contribution
     fractions = []
@@ -840,10 +835,9 @@ def plot_figure_3(**pdata):
                'axoffset'    : 0.1,
                'theme'       : 'boxed' }
 
-    x    = [np.array(pc)]
+    x    = [np.array(tc)]
     mp.plot(type='hist', ax=ax_tc, x=x, colors=[C_group[0]], **pprops)
 
-    tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
     ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     ### plot fraction
@@ -856,7 +850,7 @@ def plot_figure_3(**pdata):
                'yticklabels': [0, '$\geq 1$'],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to escape',
+               'ylabel':      'Fitness gain fraction \ndue to escape trait',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
                'theme':       'open',
@@ -927,7 +921,7 @@ def plot_figure_4(**pdata):
     var_tag   = []
     traj_poly = []
     poly_info = {}
-    var_pc    = []
+    var_tc    = []
     var_traj  = []
     var_color = []
     for i in range(len(epitope)):
@@ -935,7 +929,7 @@ def plot_figure_4(**pdata):
         df_row  = df_esc.iloc[0]
         epi_nuc = ''.join(epitope[i])
         p_tag = epi_nuc[0]+epi_nuc[-1]+str(len(epi_nuc))
-        p_c   = df_esc.iloc[0].pc_MPL
+        p_c   = df_esc.iloc[0].tc_MPL
         poly_info[p_tag] = p_c
         traj_poly.append([df_row['xp_at_%d' % t] for t in times])
         traj_indi = []
@@ -950,7 +944,7 @@ def plot_figure_4(**pdata):
     poly_key = list(poly_info.keys())
     for i in poly_info_1:
         var_tag.append(i[0])
-        var_pc.append(i[1])
+        var_tc.append(i[1])
         index_i = poly_key.index(i[0])
         var_color.append(var_c[index_i])
 
@@ -1008,7 +1002,7 @@ def plot_figure_4(**pdata):
                       orientation='vertical',edgecolor=[BKCOLOR for i in range(len(var_tag))])
 
     bar_x  = [i+0.5 for i in range(len(var_tag))]
-    var_epi = [];
+    var_epi = []
     for i in range(len(var_tag)):
         var_epi.append('r\'$'+var_tag[i]+'$\'')
     pprops = { 'colors':      [var_color],
@@ -1025,7 +1019,7 @@ def plot_figure_4(**pdata):
                'axoffset'    : 0.1,
                'theme':       'open'}
 
-    mp.plot(type='bar', ax=ax_coef,x=[bar_x], y=[var_pc], **pprops)
+    mp.plot(type='bar', ax=ax_coef,x=[bar_x], y=[var_tc], **pprops)
 
     ax_coef.text(box_coef['left']+dx, box_coef['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
@@ -1057,9 +1051,7 @@ def plot_figure_4(**pdata):
         pprops['plotprops']['alpha'] = 0.4
         mp.plot(type='line',ax=ax_lend, x=[[x1, x2]], y=[[y2, y2]], colors=[var_color[k]], **pprops)
 
-
     ax_lend.text(-1.5, 2.5, '3\' half-genome \nfor CH470', ha='left', va='center', **DEF_LABELPROPS)
-
 
     # SAVE FIGURE
     plt.savefig('%s/fig4.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
@@ -1087,14 +1079,13 @@ def plot_figure_5(**pdata):
     var_tag   = []
     var_snew  = []
     var_sold  = []
-    var_pc    = []
+    var_tc    = []
     var_traj  = []
     traj_poly = []
     for i in range(len(epitope)):
         df_esc  = df_poly[(df_poly.epitope==epitope[i])]
         df_row  = df_esc.iloc[0]
-        epi_nuc = ''.join(epitope[i])
-        var_pc.append(df_esc.iloc[0].pc_MPL)
+        var_tc.append(df_esc.iloc[0].tc_MPL)
         traj_poly.append([df_row['xp_at_%d' % t] for t in times])
         for df_iter, df_entry in df_esc.iterrows():
             if df_entry.nucleotide!='-':
@@ -1182,7 +1173,7 @@ def plot_figure_5(**pdata):
 
     bar_x  = [i+0.5 for i in range(len(var_tag)+1)]
     var_tag.append(r'$EV11$')
-    var_snew.append(var_pc[0])
+    var_snew.append(var_tc[0])
     pprops = { 'colors':      [var_c],
                'xlim':        [0, len(var_tag)+1],
                'xticks'  :    bar_x,
@@ -1239,17 +1230,17 @@ def plot_figure_6(**pdata):
     times = [int(i.split('_')[-1]) for i in df_poly.columns if 'f_at_' in i]
     times.sort()
 
-    var_sold  = [];
-    var_snew  = [];
-    epi_sold  = [];
-    epi_snew  = [];
-    var_traj  = [];
-    hig_traj  = [];
-    var_tag   = [];
-    var_note  = [];
-    ds_matrix = [];
-    new_var   = [];
-    new_note  = [];
+    var_sold  = []
+    var_snew  = []
+    epi_sold  = []
+    epi_snew  = []
+    var_traj  = []
+    hig_traj  = []
+    var_tag   = []
+    var_note  = []
+    ds_matrix = []
+    new_var   = []
+    new_note  = []
 
     for i in range(seq_length):
         df_esc  = df_poly[(df_poly.polymorphic_index==i)& (df_poly.sc_MPL != 0)& (df_poly.nucleotide != '-') ]
@@ -1265,7 +1256,7 @@ def plot_figure_6(**pdata):
         sold = []
         snew = []
         for df_iter, df_entry in df_esc.iterrows():
-            if df_entry.nucleotide!='-' and df_entry.pc_MPL > 0:
+            if df_entry.nucleotide!='-' and df_entry.tc_MPL > 0:
                 sold.append(df_entry.sc_old)
                 snew.append(df_entry.sc_MPL)
         epi_sold.append(sold)
@@ -1319,7 +1310,6 @@ def plot_figure_6(**pdata):
     w       = DOUBLE_COLUMN
     goldh   = w/1.8
     fig     = plt.figure(figsize=(w, goldh),dpi=1000)
-    sspace  = 0.02
 
     box_ss   = dict(left=0.10, right=0.45, bottom=0.38, top=0.92)
     box_traj = dict(left=0.10, right=0.45, bottom=0.09, top=0.26)
@@ -1511,7 +1501,6 @@ def plotReversionFaction(**pdata):
     """
 
     # unpack passed data
-    tags   = pdata['tags']
     ppts   = pdata['ppts']
 
     # get all reversion contribution
@@ -1570,7 +1559,7 @@ def plotReversionFaction(**pdata):
     goldh = w / 2.2
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_frac = dict(left=0.15, right=0.92, bottom=0.12, top=0.92)
+    box_frac = dict(left=0.20, right=0.92, bottom=0.22, top=0.95)
     gs_frac  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_frac)
     ax_frac  = plt.subplot(gs_frac[0, 0])
 
@@ -1597,7 +1586,7 @@ def plotReversionFaction(**pdata):
         max_t_i = int(max(common_times[i]))
         time_i  = np.linspace(0,max_t_i,max_t_i+1)
         time    = np.log(time_i+1)
-        mp.line(ax=ax_frac, x=[time], y=[IntFractions[i][:max_t_i+1]], colors=[C_DEL], **pprops)
+        mp.line(ax=ax_frac, x=[time], y=[IntFractions[i][:max_t_i+1]], colors=[C_group[0]], **pprops)
 
     pprops['plotprops']['ls'] = '--'
     mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
@@ -1609,7 +1598,7 @@ def plotReversionFaction(**pdata):
     mp.plot(type='line', ax=ax_frac, x=[time], y=[AveFraction],colors=[C_NEU], **pprops)
 
     # SAVE FIGURE
-    # plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure reversion done.')
 
 @dataclass
@@ -1626,7 +1615,7 @@ def AnalyzeData(tag):
     seq     = np.loadtxt('data/HIV/input/sequence/%s-poly-seq2state.dat'%tag)
 
     """get raw time points"""
-    times = [];
+    times = []
     for i in range(len(seq)):
         times.append(seq[i][0])
     uniq_t = np.unique(times)
@@ -1681,7 +1670,7 @@ def getEC(tag):
     try:
         df_info = pd.read_csv('%s/group/escape_group-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
 
-        epitopes = [];
+        epitopes = []
         for i in range(len(df_info)):
             epitopes.append(df_info.iloc[i].epitope)
         uniq_e = np.unique(epitopes)
@@ -1690,13 +1679,12 @@ def getEC(tag):
         ECMatrix = np.zeros(elength)
         for i in range(elength):
             e_info = df_info[df_info.epitope == uniq_e[i]]
-            ECMatrix[i] = e_info.iloc[0].pc_MPL
+            ECMatrix[i] = e_info.iloc[0].tc_MPL
 
     except FileNotFoundError:
         ECMatrix = []
 
     return ECMatrix
-
 
 def getFitness(tag):
     seq      = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
@@ -1707,7 +1695,7 @@ def getFitness(tag):
     s_sites  = result.special_sites
     uniq_t   = result.uniq_t
 
-    times = [];
+    times = []
     for i in range(len(seq)):
         times.append(seq[i][0])
 
@@ -1752,18 +1740,9 @@ def getFitness(tag):
 
     return uniq_t,FitAll,CountAll
 
+def getReversionSite(tag,s_sites):
 
-def getReversionSite(tag,traitsite,s_sites):
-    df_consensus = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
-
-    traitsitelist = []
-    # exclude trait sites
-    for i in range(len(traitsite)):
-        for j in range(len(traitsite[i])):
-            traitsitelist.append(traitsite[i][j])
-    # exclude special sites (we consider their selection coefficients as escape contribution)
-    for i in range(len(s_sites)):
-        traitsitelist.append(s_sites[i])
+    df_consensus = pd.read_csv('%s/analysis/%s-analyze.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
 
     ReversionSites = []
     for i in range(len(df_consensus)):
@@ -1772,23 +1751,10 @@ def getReversionSite(tag,traitsite,s_sites):
         consensus_i  = df_consensus.iloc[i].consensus
         if nucleotide_i != TF_i and nucleotide_i == consensus_i:
             site_i = df_consensus.iloc[i].polymorphic_index
-            if site_i not in traitsitelist:
+            if site_i not in s_sites:
                 ReversionSites.append(str(site_i)+str(nucleotide_i))
     ReversionSites = np.unique(ReversionSites)
-    return ReversionSites
-
-def getReversionSite_old(tag):
-    df_consensus = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
-
-    ReversionSites = []
-    for i in range(len(df_consensus)):
-        nucleotide_i = df_consensus.iloc[i].nucleotide
-        TF_i         = df_consensus.iloc[i].TF
-        consensus_i  = df_consensus.iloc[i].consensus
-        if nucleotide_i != TF_i and nucleotide_i == consensus_i:
-            site_i = df_consensus.iloc[i].polymorphic_index
-            ReversionSites.append(str(site_i)+str(nucleotide_i))
-    ReversionSites = np.unique(ReversionSites)
+    
     return ReversionSites
 
 def getFitnessReversion(tag):
@@ -1800,11 +1766,9 @@ def getFitnessReversion(tag):
     s_sites  = result.special_sites
     uniq_t   = result.uniq_t
 
-    # ReversionSites = getReversionSite(tag,traitsite)
-    ReversionSites = getReversionSite(tag,traitsite,s_sites)
+    ReversionSites = getReversionSite(tag,s_sites)
 
-
-    times = [];
+    times = []
     for i in range(len(seq)):
         times.append(seq[i][0])
 
@@ -1850,170 +1814,6 @@ def getFitnessReversion(tag):
 
     return uniq_t,FitAll,CountAll
 
-def getFitness1(tag):
-    seq      = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
-
-    result   = AnalyzeData(tag)
-    traitsite = result.escape_group
-    polyseq  = result.escape_TF
-    s_sites  = result.special_sites
-    uniq_t   = result.uniq_t
-
-    times = [];
-    for i in range(len(seq)):
-        times.append(seq[i][0])
-
-    SCMatrix = getSC(tag)
-    ECMatrix = getEC(tag)
-    FitAll   = np.zeros((2,len(uniq_t)))# 0:total fitness, 1: fitness increase from escape (group+special sites)
-    CountAll = np.zeros(len(uniq_t))    # population number at different times
-    pd_n     = np.zeros((4,len(uniq_t))) # mutation for total fitness : 0: positive  1:negative
-    pd_val   = np.zeros((4,len(uniq_t))) # escape mutation : 2: positive  3:negative
-    for t in range(len(uniq_t)):
-        tid = times==uniq_t[t]
-
-        cout_t = seq[tid][:,1]
-        seq_t  = seq[tid][:,2:]
-        counts = np.sum(cout_t)
-
-        fit_a = 0 # total fitness
-        fit_e = 0 # fitness for escape part
-
-        for i in range(len(seq_t)):
-            # fitness contribution from individual selection
-            fitness = 1
-            for j in range(len(seq_t[0])):
-                sc_j    = SCMatrix[j,int(seq_t[i][j])]
-                fitness += sc_j
-                if sc_j > 0:
-                    pd_n[0,t]   += 1
-                    pd_val[0,t] += sc_j
-                elif sc_j < 0:
-                    pd_n[1,t]   += 1
-                    pd_val[1,t] += sc_j
-
-            fitness_e = 0
-            # fitness contribution from escape group
-            for ii in range(len(traitsite)):
-                poly_value = sum([abs(seq_t[i][int(traitsite[ii][jj])]-polyseq[ii][jj]) for jj in range(len(traitsite[ii]))])
-                if poly_value > 0:
-                    fitness   += ECMatrix[ii]
-                    fitness_e += ECMatrix[ii]
-                    if ECMatrix[ii] > 0:
-                        pd_n[0,t]   += 1
-                        pd_val[0,t] += ECMatrix[ii]
-                        pd_n[2,t]   += 1
-                        pd_val[2,t] += ECMatrix[ii]
-                    elif ECMatrix[ii] < 0:
-                        pd_n[1,t]   += 1
-                        pd_val[1,t] += ECMatrix[ii]
-                        pd_n[3,t]   += 1
-                        pd_val[3,t] += ECMatrix[ii]
-
-            # fitness contribution from special sites
-            for jj in s_sites:
-                sc_jj    = SCMatrix[jj,int(seq_t[i][jj])]
-                fitness_e += sc_jj
-                if sc_jj > 0:
-                    pd_n[2,t]   += 1
-                    pd_val[2,t] += sc_jj
-                elif sc_jj < 0:
-                    pd_n[3,t]   += 1
-                    pd_val[3,t] += sc_jj
-
-            fit_a += fitness*cout_t[i]
-            fit_e += fitness_e*cout_t[i]
-
-        FitAll[0,t]   = fit_a/counts
-        FitAll[1,t]   = fit_e/counts
-        pd_n[:,t]     = pd_n[:,t]/counts
-        pd_val[:,t]   = pd_val[:,t]/counts
-        CountAll[t] = counts
-
-    return uniq_t,FitAll,CountAll,pd_n,pd_val
-
-def getFitnessReversion1(tag):
-    seq      = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
-
-    result   = AnalyzeData(tag)
-    traitsite = result.escape_group
-    polyseq  = result.escape_TF
-    s_sites  = result.special_sites
-    uniq_t   = result.uniq_t
-
-    ReversionSites = getReversionSite(tag,traitsite,s_sites)
-
-    times = [];
-    for i in range(len(seq)):
-        times.append(seq[i][0])
-
-    SCMatrix = getSC(tag)
-    ECMatrix = getEC(tag)
-    FitAll   = np.zeros((2,len(uniq_t)))# 0:total fitness, 1: fitness increase from reversion (individual sites)
-    CountAll = np.zeros(len(uniq_t))    # population number at different times
-    pd_n     = np.zeros((4,len(uniq_t))) # mutation for total fitness : 0: positive  1:negative
-    pd_val   = np.zeros((4,len(uniq_t))) # escape mutation : 2: positive  3:negative
-    for t in range(len(uniq_t)):
-        tid = times==uniq_t[t]
-
-        cout_t = seq[tid][:,1]
-        seq_t  = seq[tid][:,2:]
-        counts = np.sum(cout_t)
-
-        fit_a = 0 # total fitness
-        fit_r = 0 # fitness due to reversion
-
-        for i in range(len(seq_t)):
-            # fitness contribution from individual selection
-            fitness = 1
-            for j in range(len(seq_t[0])):
-                sc_j = SCMatrix[j,int(seq_t[i][j])]
-                fitness += sc_j
-                if sc_j > 0:
-                    pd_n[0,t]   += 1
-                    pd_val[0,t] += sc_j
-                elif sc_j < 0:
-                    pd_n[1,t]   += 1
-                    pd_val[1,t] += sc_j
-
-            # fitness contribution from escape group
-            for ii in range(len(traitsite)):
-                poly_value = sum([abs(seq_t[i][int(traitsite[ii][jj])]-polyseq[ii][jj]) for jj in range(len(traitsite[ii]))])
-                if poly_value > 0:
-                    fitness   += ECMatrix[ii]
-                    if ECMatrix[ii] > 0:
-                        pd_n[0,t]   += 1
-                        pd_val[0,t] += ECMatrix[ii]
-                    elif ECMatrix[ii] < 0:
-                        pd_n[1,t]   += 1
-                        pd_val[1,t] += ECMatrix[ii]
-
-            fit_a += fitness*cout_t[i]
-
-            fitness_r = 0
-            for k in range(len(ReversionSites)):
-                site_j = int(ReversionSites[k][:-1])
-                allele_j = NUC.index(ReversionSites[k][-1])
-                if seq_t[i][site_j] == allele_j:
-                    sc_jj = SCMatrix[site_j,allele_j]
-                    fitness_r += sc_jj
-                    if sc_jj > 0:
-                        pd_n[2,t]   += 1
-                        pd_val[2,t] += sc_jj
-                    elif sc_jj < 0:
-                        pd_n[3,t]   += 1
-                        pd_val[3,t] += sc_jj
-
-            fit_r += fitness_r*cout_t[i]
-
-        FitAll[0,t]   = fit_a/counts
-        FitAll[1,t]   = fit_r/counts
-        CountAll[t]   = counts
-        pd_n[:,t]     = pd_n[:,t]/counts
-        pd_val[:,t]   = pd_val[:,t]/counts
-
-    return uniq_t,FitAll,CountAll,pd_n,pd_val
-
 def plot_single_fraction(**pdata):
     """
     a. Histogram of selection coefficients and escape coefficients
@@ -2024,8 +1824,6 @@ def plot_single_fraction(**pdata):
     ppt   = pdata['ppt']
 
     # get fraction due to escape part or reversion part
-    common_times = []
-
     tag_3 = ppt + '-' + str(3)
     tag_5 = ppt + '-' + str(5)
 
@@ -2080,12 +1878,9 @@ def plot_single_fraction(**pdata):
     goldh = w / 2
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_frac   = dict(left=0.15, right=0.92, bottom=0.12, top=0.92)
+    box_frac   = dict(left=0.20, right=0.92, bottom=0.22, top=0.95)
     gs_frac    = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_frac)
     ax_frac    = plt.subplot(gs_frac[0, 0])
-
-    dx = -0.10
-    dy =  0.02
 
     ### plot fraction for escape part
     pprops = { #'xticks':      [ 0,  100, 200, 300,  400, 500, 600, 700],
@@ -2111,14 +1906,20 @@ def plot_single_fraction(**pdata):
     # due to reversion
     mp.line(ax=ax_frac, x=[time], y=[IntFractions[1]], colors=[C_group[1]], **pprops)
 
-    # due to escape and reversion
+    # y=0 and y=1
+    pprops['plotprops']['ls'] = '--'
+    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
+    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[1,1]],colors=[C_NEU], **pprops)
+
+    # sum of due to escape and reversion
     pprops['plotprops']['alpha'] = 1
+    pprops['plotprops']['ls'] = '-'
     mp.plot(type='line',ax=ax_frac, x=[time], y=[IntFractions[0]+IntFractions[1]], colors=[C_group[2]], **pprops)
 
     # legend
-    traj_legend_x  =  np.log(300)
-    traj_legend_y  = [1.0, 0.85,0.70]
-    traj_legend_t  = ['Escape','Reversion','Both']
+    traj_legend_x  =  np.log(2.2)
+    traj_legend_y  = [0.85,0.70,0.55]
+    traj_legend_t  = ['Escape','Reversion','Sum']
 
     x1 = traj_legend_x-0.6
     x2 = traj_legend_x-0.1
@@ -2137,3 +1938,137 @@ def plot_single_fraction(**pdata):
     pprops['plotprops']['alpha'] = 1
     mp.line(ax=ax_frac, x=[[x1, x2]], y=[[y3, y3]], colors=[C_group[2]], **pprops)
     ax_frac.text(traj_legend_x, traj_legend_y[2], traj_legend_t[2], ha='left', va='center', **DEF_LABELPROPS)
+
+    plt.savefig('%s/reversion-CH%s.pdf' % (FIG_DIR,ppt[-3:]), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+
+
+def plot_histogram_sim_rec(**pdata):
+    """
+    a. Histogram of coefficients without recombination
+    b. Histogram of coefficients with recombination
+    """
+
+    # unpack passed data
+
+    n_ben = pdata['n_ben']
+    n_neu = pdata['n_neu']
+    n_del = pdata['n_del']
+    n_tra = pdata['n_tra']
+    s_ben = pdata['s_ben']
+    s_neu = pdata['s_neu']
+    s_del = pdata['s_del']
+    s_tra = pdata['s_tra']
+
+    # PLOT FIGURE
+    ## set up figure grid
+
+    w     = DOUBLE_COLUMN
+    goldh = w / 2.2
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_s_old   = dict(left=0.10, right=0.62, bottom=0.55, top=0.95)
+    box_t_old   = dict(left=0.69, right=0.92, bottom=0.55, top=0.95)
+    box_s_new   = dict(left=0.10, right=0.62, bottom=0.10, top=0.50)
+    box_t_new   = dict(left=0.69, right=0.92, bottom=0.10, top=0.50)
+
+    gs_s_old   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_s_old)
+    gs_t_old   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_t_old)
+    gs_s_new = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_s_new)
+    gs_t_new = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_t_new)
+
+    ax_s_old  = plt.subplot(gs_s_old[0, 0])
+    ax_t_old  = plt.subplot(gs_t_old[0, 0])
+    ax_s_new = plt.subplot(gs_s_new[0, 0])
+    ax_t_new = plt.subplot(gs_t_new[0, 0])
+
+    dx = -0.04
+    dy =  0.03
+
+    ### plot histogram
+
+    df_noR = pd.read_csv('%s/mpl_collected_noR.csv' % SIM_DIR, memory_map=True)
+
+    df_all = pd.read_csv('%s/mpl_collected_nsdt.csv' % SIM_DIR, memory_map=True)
+    df     = df_all[(df_all.ns==1000) & (df_all.delta_t==1)]
+
+    ben_cols = ['sc_%d' % i for i in range(n_ben)]
+    neu_cols = ['sc_%d' % i for i in range(n_ben, n_ben+n_neu)]
+    del_cols = ['sc_%d' % i for i in range(n_ben+n_neu, n_ben+n_neu+n_del)]
+    tra_cols = ['tc_%d' % i for i in range(n_tra)]
+
+    colors     = [C_BEN, C_NEU, C_DEL]
+    tags       = ['beneficial', 'neutral', 'deleterious','trait']
+    cols       = [ben_cols, neu_cols, del_cols, tra_cols]
+    s_true_loc = [s_ben, s_neu, s_del,s_tra]
+
+    ## a,c -- selection part
+
+    dashlineprops = { 'lw' : SIZELINE * 1.5, 'ls' : ':', 'alpha' : 0.5, 'color' : BKCOLOR }
+    histprops = dict(histtype='bar', lw=SIZELINE/2, rwidth=0.8, ls='solid', alpha=0.6, edgecolor='none')
+    pprops = { 'xlim'        : [ -0.04,  0.04],
+               'xticks'      : [ -0.04, -0.03, -0.02, -0.01,    0.,  0.01,  0.02,  0.03,  0.04],
+               'xticklabels' : [    -4,    -3,    -2,    -1,     0,      1,    2,     3,     4],
+               'ylim'        : [0., 0.10],
+               'yticks'      : [0., 0.05, 0.10],
+               'ylabel'      : 'Frequency',
+               'bins'        : np.arange(-0.04, 0.04, 0.001),
+               'combine'     : True,
+               'plotprops'   : histprops,
+               'axoffset'    : 0.1,
+               'theme'       : 'boxed' }
+
+    for i in range(len(tags)-1):
+        x = [np.array(df_noR[cols[i]]).flatten()]
+        tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+        ax_s_old.text(s_true_loc[i], 0.106, r'$s_{%s}$' % (tags[i]), color=colors[i], **tprops)
+        ax_s_old.axvline(x=s_true_loc[i], **dashlineprops)
+        if i<len(tags)-2: mp.hist(             ax=ax_s_old, x=x, colors=[colors[i]], **pprops)
+        else:             mp.plot(type='hist', ax=ax_s_old, x=x, colors=[colors[i]], **pprops)
+
+    pprops['xlabel'] = 'Inferred selection coefficient, ' + r'$\hat{s}$' + ' (%)'
+    for i in range(len(tags)-1):
+        x = [np.array(df[cols[i]]).flatten()]
+        tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+        ax_s_new.axvline(x=s_true_loc[i], **dashlineprops)
+        if i<len(tags)-2: mp.hist(             ax=ax_s_new, x=x, colors=[colors[i]], **pprops)
+        else:             mp.plot(type='hist', ax=ax_s_new, x=x, colors=[colors[i]], **pprops)
+
+    ax_s_old.text(-0.035, 0.08, 'Without\nrecombination', **DEF_LABELPROPS)
+    ax_s_new.text(-0.035, 0.08, 'With\nrecombination', **DEF_LABELPROPS)
+
+    ax_s_old.text(box_s_old['left']+dx, box_s_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    ax_s_new.text(box_s_new['left']+dx, box_s_new['top']+dy, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    
+    ## b,d -- trait part
+    histprops = dict(histtype='bar', lw=SIZELINE/2, rwidth=0.8, ls='solid', alpha=0.6, edgecolor='none')
+    pprops = { 'xlim'        : [   0, 0.12],
+               'xticks'      : [   0, 0.04, 0.08, 0.10, 0.12],
+               'xticklabels' : [   0,    4,    8,   10,   12],
+               'ylim'        : [0., 0.15],
+               'yticks'      : [0., 0.05, 0.10, 0.15],
+               'ylabel'      : 'Frequency',
+               'bins'        : np.arange(0, 0.12, 0.003),
+               'plotprops'   : histprops,
+               'axoffset'    : 0.1,
+               'theme'       : 'boxed' }
+
+    x = [np.array(df_noR[cols[3]]).flatten()]
+    tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+    ax_t_old.text(s_true_loc[3], 0.159, r'$s_{%s}$' % (tags[3]), color=C_group[0], **tprops)
+    ax_t_old.axvline(x=s_true_loc[3], **dashlineprops)
+    mp.plot(type='hist', ax=ax_t_old, x=x, colors=[C_group[0]], **pprops)
+
+    pprops['xlabel'] = 'Inferred trait coefficient, ' + r'$\hat{s}$' + ' (%)'
+    x = [np.array(df[cols[3]]).flatten()]
+    tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+    ax_t_new.axvline(x=s_true_loc[3], **dashlineprops)
+    mp.plot(type='hist', ax=ax_t_new, x=x, colors=[C_group[0]], **pprops)
+
+    ax_t_old.text(0.01, 0.12, 'Without\nrecombination', **DEF_LABELPROPS)
+    ax_t_new.text(0.01, 0.12, 'With\nrecombination', **DEF_LABELPROPS)
+
+    ax_t_old.text(box_t_old['left']+dx,  box_t_old['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    ax_t_new.text(box_t_new['left']+dx,  box_t_new['top']+dy, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    
+    # SAVE FIGURE
+    plt.savefig('%s/sim_his_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)

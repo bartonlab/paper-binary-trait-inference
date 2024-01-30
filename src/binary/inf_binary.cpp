@@ -295,29 +295,26 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
 
     // set initial allele frequency and covariance then loop
     computeAlleleFrequencies(sequences[0], counts[0], trait_sites, trait_sequence, lastp1, lastp2,lastpt);
-    computeRecFrequencies(sequences[0], counts[0], trait_sites, trait_sequence,lastpk) ;
+    if (r_rate > 0){computeRecFrequencies(sequences[0], counts[0], trait_sites, trait_sequence,lastpk);}
 
     for (int a=0;a<LL;a++) dx[a] -= lastp1[a]; // dx -= x[t_0]
 
     for (int k=1;k<sequences.size();k++) {
 
         computeAlleleFrequencies(sequences[k], counts[k], trait_sites, trait_sequence, p1, p2, pt);
-        computeRecFrequencies(sequences[k], counts[k], trait_sites, trait_sequence,pk);
+        if (r_rate > 0){computeRecFrequencies(sequences[k], counts[k], trait_sites, trait_sequence,pk);}
         updateCovarianceIntegrate(times[k] - times[k-1], lastp1, lastp2, p1, p2, totalCov);
         updateMuIntegrate(times[k] - times[k-1], L, muMatrix, trait_sites, trait_sequence, lastp1, lastpt, p1, pt, totalMu);
-        updateComIntegrate(times[k] - times[k-1], L, r_rate, trait_sites, trait_sequence, trait_dis, lastp1, lastpk, p1, pk, totalCom);
-
+        if (r_rate > 0){updateComIntegrate(times[k] - times[k-1], L, r_rate, trait_sites, trait_sequence, trait_dis, lastp1, lastpk, p1, pk, totalCom);}
         if (k==sequences.size()-1) { for (int a=0;a<LL;a++) dx[a] += p1[a]; }// dx += x[t_K]
 
         else { lastp1 = p1; lastp2 = p2; lastpt = pt; lastpk = pk;}
-
     }
 
     // Gather dx and totalMu terms
     for (int a=0;a<LL;a++) dx[a] -= (totalMu[a] + totalCom[a]);
 
 }
-
 
 // Add Gaussian regularization for selection coefficients (modifies integrated covariance)
 void regularizeCovariance(const IntVVector &sequences, // vector of sequence vectors

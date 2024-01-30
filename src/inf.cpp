@@ -354,16 +354,17 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
     // Gather dx and totalMu terms
     for (int a=0;a<LL;a++) dx[a] -= (totalMu[a] + totalCom[a]);
 
-    std::cout << "\nNumerator for escape part is\n";
-    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] << " ";
+    // Output for debugging
+    // std::cout << "\nNumerator for escape part is\n";
+    // for (int a=0;a<ne;a++) std::cout << dx[L * q + a] << " ";
 
-    std::cout << "\nNumerator for escape part without recombination part is\n";
-    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalCom[L * q + a]<< " ";
+    // std::cout << "\nNumerator for escape part without recombination part is\n";
+    // for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalCom[L * q + a]<< " ";
 
-    std::cout << "\nNumerator for escape part without mutation part is\n";
-    for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalMu[L * q + a]<< " ";
+    // std::cout << "\nNumerator for escape part without mutation part is\n";
+    // for (int a=0;a<ne;a++) std::cout << dx[L * q + a] - totalMu[L * q + a]<< " ";
 
-    std::cout << "\n";
+    // std::cout << "\n";
 
 }
 

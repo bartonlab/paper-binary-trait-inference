@@ -127,30 +127,30 @@ def get_unique_sequence(tag,i,j):
     states = []
     if len(j) == 1:
         initial_states = [seq[0][i+2],seq[0][i+j[0]+2]]
-        states.append(initial_states);
+        states.append(initial_states)
         for l in range(len(seq)):
-            temp_states = [seq[l][i+2],seq[l][i+j[0]+2]];
+            temp_states = [seq[l][i+2],seq[l][i+j[0]+2]]
             temp_states = np.trunc(temp_states)
             temp_states = list(temp_states)
-            n = 0;
+            n = 0
             for jj in range(len(states)):
                 current_states = list(states[jj])
                 if current_states != temp_states:
-                    n += 1;
+                    n += 1
             if n == len(states):
                 states.append(temp_states)
     elif len(j) == 2:
         initial_states = [seq[0][i+2],seq[0][i+j[0]+2],seq[0][i+j[1]+2]]
-        states.append(initial_states);
+        states.append(initial_states)
         for l in range(len(seq)):
-            temp_states = [seq[l][i+2],seq[l][i+j[0]+2],seq[l][i+j[1]+2]];
+            temp_states = [seq[l][i+2],seq[l][i+j[0]+2],seq[l][i+j[1]+2]]
             temp_states = np.trunc(temp_states)
             temp_states = list(temp_states)
-            n = 0;
+            n = 0
             for jj in range(len(states)):
                 current_states = list(states[jj])
                 if current_states != temp_states:
-                    n += 1;
+                    n += 1
             if n == len(states):
                 states.append(temp_states)
     else:
@@ -160,13 +160,13 @@ def get_unique_sequence(tag,i,j):
 def get_frame(tag, polymorphic_sites, nuc):
     """ Return number of reading frames in which the input nucleotide is nonsynonymous in context, compared to T/F. """
 
-    df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic','HXB2','TF']);
-    ns = [];
+    df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic','HXB2','TF'])
+    ns = []
 
     n_frame = df_sequence[df_sequence['polymorphic'] == polymorphic_sites]
     i = n_frame.iloc[0].alignment # index for the polymorphic site in index file
     i_HXB2 = int(n_frame.iloc[0].HXB2)
-    frames = index2frame(i_HXB2);
+    frames = index2frame(i_HXB2)
 
     for fr in frames:
 
@@ -174,7 +174,7 @@ def get_frame(tag, polymorphic_sites, nuc):
         TF_codon = df_sequence.iloc[i-pos].TF + df_sequence.iloc[i-pos+1].TF + df_sequence.iloc[i-pos+2].TF
         TF_codon = [a for a in TF_codon]
 
-        if len(TF_codon)<3 and verbose:
+        if len(TF_codon)<3:
             print('\tmutant at site %d in codon that does not terminate in alignment, assuming syn' % i)
 
         else:
@@ -186,26 +186,26 @@ def get_frame(tag, polymorphic_sites, nuc):
             if len(replace_indices) > 0:
                 dd = len(replace_indices) + 1
                 #print('there are %d polymorphic sites in this codon'%dd)
-                k_index = [];
+                k_index = []
 
                 if len(replace_indices) == 2:
                     k_1 = replace_indices[0]
                     k_2 = replace_indices[1]
-                    k_index.append(k_1-pos);
-                    k_index.append(k_2-pos);
+                    k_index.append(k_1-pos)
+                    k_index.append(k_2-pos)
                 elif len(replace_indices) == 1:
                     k = replace_indices[0]
                     if   pos == 0:
-                        k_index.append(1);
+                        k_index.append(1)
                     elif pos == 2:
-                        k_index.append(-1);
+                        k_index.append(-1)
                     elif pos == 1:
-                        k_index.append(k-1);
+                        k_index.append(k-1)
                 else:
                     print('error, there are more than 3 nucleotides in one codon')
 
                 is_ns = False
-                match_states = get_unique_sequence(tag,polymorphic_sites,k_index);
+                match_states = get_unique_sequence(tag,polymorphic_sites,k_index)
                 for s in match_states:
                     TF_codon = df_sequence.iloc[i-pos].TF + df_sequence.iloc[i-pos+1].TF + df_sequence.iloc[i-pos+2].TF
                     TF_codon = [a for a in TF_codon]
@@ -245,8 +245,8 @@ def find_trait_site(tag,min_n):
 
     for i in range(len(df_poly)):
         if pd.notna(df_poly.at[i, 'epitope']) and df_poly.iloc[i].nonsynonymous > 0:
-            poly = int(df_poly.iloc[i].polymorphic_index);
-            nons = df_poly.iloc[i].nonsynonymous;
+            poly = int(df_poly.iloc[i].polymorphic_index)
+            nons = df_poly.iloc[i].nonsynonymous
 
             """ get the corresponding reading frame"""
             HXB2_s = df_poly.iloc[i].HXB2_index
@@ -264,11 +264,11 @@ def find_trait_site(tag,min_n):
 
             """ judge if this site is trait site """
             if len(frames) == nons : #the mutation in this site is nonsynonymous in all reading frame
-                escape_values[i] = 'True';
+                escape_values[i] = 'True'
             else:
                 """get the reading frame of the mutant site"""
                 nuc = df_poly.iloc[i].nucleotide
-                nonsfram = get_frame(tag, poly, nuc);
+                nonsfram = get_frame(tag, poly, nuc)
 
                 """get the reading frame of the epitope"""
                 df       = df_epi[(df_epi.epitope == df_poly.iloc[i].epitope)]
@@ -276,7 +276,7 @@ def find_trait_site(tag,min_n):
 
                 ''' decide whether this polymorphic site is nonsynonymous in its epitope reading frame '''
                 if epiframe in nonsfram:
-                    escape_values[i] = 'True';
+                    escape_values[i] = 'True'
 
     """modify the csv file and save it"""
     columns_to_remove = ['exposed', 'edge_gap','flanking','glycan']
@@ -290,8 +290,8 @@ def find_trait_site(tag,min_n):
     df_rows = df_poly[df_poly['epitope'].notna()]
     unique_epitopes = df_rows['epitope'].unique()
 
-    trait_all   = [];
-    trait_all_i = [];
+    trait_all   = []
+    trait_all_i = []
 
     "store the information for trait sites into files (trait site and TF trait sequences)"
     f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
@@ -299,7 +299,7 @@ def find_trait_site(tag,min_n):
 
     for epi in unique_epitopes:
 
-        trait_sites = [];
+        trait_sites = []
         df_e = df_rows[(df_rows['epitope'] == epi) & (df_rows['escape'] == True)] # find all escape mutation for one epitope
         trait_sites = df_e['polymorphic_index'].unique()
 
@@ -318,16 +318,16 @@ def find_trait_site(tag,min_n):
     g.close()
 
     if len(trait_all)!= 0 and len(trait_all_i) == 0:
-        print('  %s has %d escape groups, they are %s'%(tag,len(trait_all),' '.join([str(i) for i in trait_all])))
+        print('-- %s has %d escape groups, they are %s'%(tag,len(trait_all),','.join([str(i) for i in trait_all])))
     elif len(trait_all)== 0 and len(trait_all_i) != 0:
-        print('==%s has %d escape groups, they are %s'%(tag,len(trait_all_i),' '.join([str(i) for i in trait_all_i])))
+        print('== %s has no escape group, the special sites are: %s'%(tag,','.join([str(i) for i in trait_all_i])))
     elif len(trait_all) != 0 and len(trait_all_i) != 0:
-        print('++%s has %d (+%d) escape groups, they are %s, the special sites are %s'
-              %(tag,len(trait_all),len(trait_all_i),' '.join([str(i) for i in trait_all]),' '.join([str(i) for i in trait_all_i])))
+        print('++ %s has %d (+%d) escape groups, they are %s, the special sites are %s'
+              %(tag,len(trait_all),len(trait_all_i),','.join([str(i) for i in trait_all]),','.join([str(i) for i in trait_all_i])))
     else:
-        print('%s has no triat site'%tag)
+        print('   %s has no triat site'%tag)
 
-    "store the information for trait sites into files (not polymorphic sites between 2 trait sites)"
+    "store the information for trait sites into files (the number of normal sites between 2 trait sites)"
     df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic'])
     f = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
     for i in range(len(trait_all)):
@@ -339,33 +339,32 @@ def find_trait_site(tag,min_n):
         f.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
     f.close()
 
-
 def get_all_variants(seq,df_poly):
-    all_variants = [];
-    TF_seq       = [];
+    all_variants = []
+    TF_seq       = []
     L   = len(seq[0])-2
     for i in range(L):
-        i_poly     = df_poly[df_poly['polymorphic_index'] == i];
+        i_poly     = df_poly[df_poly['polymorphic_index'] == i]
         TF_nuc     = NUC.index(i_poly.iloc[0].TF)
         TF_seq.append(TF_nuc)
         for j in range(len(i_poly)):
             if i_poly.iloc[j].nucleotide != i_poly.iloc[j].TF:
-                mut_allele = i_poly.iloc[j].nucleotide;
-                mut_site   = i;
-                variant    = str(mut_site) + '_' + str(mut_allele);
+                mut_allele = i_poly.iloc[j].nucleotide
+                mut_site   = i
+                variant    = str(mut_site) + '_' + str(mut_allele)
                 all_variants.append(variant)
     if len(TF_seq) != len(seq[0])-2:
         print('there is something wrong with TF sequence')
 
     return all_variants,TF_seq
 
-def analyze_result(tag):
+def analyze_result(tag,verbose=True):
     '''
     collect data and then write into csv file
     '''
 
     def get_xp(seq,traitsite,polyseq):
-        times = [];
+        times = []
 
         for i in range(len(seq)):
             times.append(seq[i][0])
@@ -386,10 +385,14 @@ def analyze_result(tag):
 
         return xp
 
-    seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag));
-    L       = len(seq[0])-2;    #the number of polymorphic sites
+    seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    L       = len(seq[0])-2    #the number of polymorphic sites
 
-    sc      = np.loadtxt('%s/output/sc-%s.dat'%(HIV_DIR,tag))
+    if verbose:
+        sc      = np.loadtxt('%s/output/sc-%s.dat'%(HIV_DIR,tag))
+    else:
+        sc      = np.loadtxt('%s/noR/output/sc-%s.dat'%(HIV_DIR,tag))
+
     sc_old  = np.loadtxt('%s/notrait/output/sc-%s.dat'%(HIV_DIR,tag))
 
     try:
@@ -410,33 +413,37 @@ def analyze_result(tag):
     cols = [i for i in list(df_poly) if i not in index_cols]
     times = [int(cols[i].split('_')[-1]) for i in range(len(cols))]
 
-    f = open(HIV_DIR+'/analysis/'+tag+'-analyze.csv','w')
-    f.write('polymorphic_index,alignment,HXB2_index,nucleotide,TF,epitope,escape,sc_old,sc_MPL,pc_MPL')
+    if verbose:
+        f = open(HIV_DIR+'/analysis/'+tag+'-analyze.csv','w')
+    else:
+        f = open(HIV_DIR+'/noR/analysis/'+tag+'-analyze.csv','w')
+    f.write('polymorphic_index,alignment,HXB2_index,nucleotide,TF,consensus,epitope,escape,sc_old,sc_MPL,tc_MPL')
     f.write(',%s' % (','.join(cols)))
     f.write('\n')
 
     for ii in range(len(df_poly)):
-        polymorphic_index = df_poly.iloc[ii].polymorphic_index;
-        alignment         = df_poly.iloc[ii].alignment_index;
-        HXB2_index        = df_poly.iloc[ii].HXB2_index;
-        nucleotide        = df_poly.iloc[ii].nucleotide;
-        TF                = df_poly.iloc[ii].TF;
-        epitope           = df_poly.iloc[ii].epitope;
-        escape            = df_poly.iloc[ii].escape;
+        polymorphic_index = df_poly.iloc[ii].polymorphic_index
+        alignment         = df_poly.iloc[ii].alignment_index
+        HXB2_index        = df_poly.iloc[ii].HXB2_index
+        nucleotide        = df_poly.iloc[ii].nucleotide
+        TF                = df_poly.iloc[ii].TF
+        consensus         = df_poly.iloc[ii].consensus
+        epitope           = df_poly.iloc[ii].epitope
+        escape            = df_poly.iloc[ii].escape
 
         # get selection coefficient
-        nuc_index  = NUC.index(nucleotide)+polymorphic_index*5;
-        TF_index   = NUC.index(TF)+polymorphic_index*5;
-        sc_MPL     = sc[nuc_index]-sc[TF_index];
-        sc_mpl_old = sc_old[nuc_index]-sc_old[TF_index];
-        pc_MPL     = 'nan';
-        df_i       = df_poly.iloc[ii];
+        nuc_index  = NUC.index(nucleotide)+polymorphic_index*5
+        TF_index   = NUC.index(TF)+polymorphic_index*5
+        sc_MPL     = sc[nuc_index]-sc[TF_index]
+        sc_mpl_old = sc_old[nuc_index]-sc_old[TF_index]
+        tc_MPL     = 'nan'
+        df_i       = df_poly.iloc[ii]
         if sc_MPL != 0:
             for i in range(len(traitsite)):
                 if polymorphic_index in traitsite[i]:
-                    pc_MPL = sc[i+L*5]
+                    tc_MPL = sc[i+L*5]
         f.write('%d,%d,%s,%s,' % (polymorphic_index, alignment, HXB2_index, nucleotide))
-        f.write('%s,%s,%s,%f,%f,%s' % (TF, epitope, escape, sc_mpl_old, sc_MPL,pc_MPL))
+        f.write('%s,%s,%s,%s,%f,%f,%s' % (TF, consensus, epitope, escape, sc_mpl_old, sc_MPL,tc_MPL))
         f.write(',%s' % (','.join([str(df_i[c]) for c in cols])))
         f.write('\n')
     f.close()
@@ -449,7 +456,10 @@ def analyze_result(tag):
         polyseq  = read_file('traitseq/traitseq-'+tag+'.dat')
         xp = get_xp(seq,traitsite,polyseq)
 
-        g = open('%s/group/escape_group-%s.csv'%(HIV_DIR,tag),'w')
+        if verbose:
+            g = open('%s/group/escape_group-%s.csv'%(HIV_DIR,tag),'w')
+        else:
+            g = open('%s/noR/group/escape_group-%s.csv'%(HIV_DIR,tag),'w')
         g.write('polymorphic_index')
         g.write(',%s' % (','.join(cols)))
         for t in range(len(times)):
@@ -485,22 +495,22 @@ def modify_seq(tag):
     for i in range(len(all_variants)):
         variant   = all_variants[i]
         trait_site = int(variant.split('_')[0])
-        mut_alle  = variant.split('_')[-1];
-        mut_index = NUC.index(mut_alle);
+        mut_alle  = variant.split('_')[-1]
+        mut_index = NUC.index(mut_alle)
         g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
         g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
         g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
         g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
-
+        
         f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
         for j in range(len(seq)):
-            seq_modi  = seq[j];
-            poly_states = [];
+            seq_modi  = seq[j]
+            poly_states = []
             for ii in range(L):
                 if ii == trait_site and seq_modi[ii+2] == mut_index:
-                    poly_states.append(str(TF_seq[trait_site]));
+                    poly_states.append(str(TF_seq[trait_site]))
                 else:
-                    poly_states.append(str(int(seq_modi[ii+2])));
+                    poly_states.append(str(int(seq_modi[ii+2])))
             f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
         f.close()
 
@@ -513,13 +523,13 @@ def modify_seq(tag):
 
         f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
         for j in range(len(seq)):
-            seq_modi  = seq[j];
-            poly_states = [];
+            seq_modi  = seq[j]
+            poly_states = []
             for ii in range(L):
                 if ii in trait_sites[n]:
-                    poly_states.append(str(TF_seq[ii]));
+                    poly_states.append(str(TF_seq[ii]))
                 else:
-                    poly_states.append(str(int(seq_modi[ii+2])));
+                    poly_states.append(str(int(seq_modi[ii+2])))
             f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
         f.close()
 
@@ -540,90 +550,90 @@ def cal_sij(tag):
 
     for i in range(len(all_variants)):
         #get site and allele for mask variant
-        variant = all_variants[i];
-        sc      = np.loadtxt('%s/output/%s/sc_%s.dat'%(HIV_DIR,tag,variant));
+        variant = all_variants[i]
+        sc      = np.loadtxt('%s/output/%s/sc_%s.dat'%(HIV_DIR,tag,variant))
         trait_site_i = int(variant.split('_')[0])
-        mut_alle_i  = variant.split('_')[-1];
+        mut_alle_i  = variant.split('_')[-1]
 
-        i_poly     = df_poly[df_poly['polymorphic_index'] == trait_site_i];
+        i_poly     = df_poly[df_poly['polymorphic_index'] == trait_site_i]
         i_align    = i_poly.iloc[0].alignment #get aligment for this site
 
         # individual site part
         for j in range(len(all_variants)):
             trait_site_j = int(all_variants[j].split('_')[0])
-            mut_alle_j  = all_variants[j].split('_')[-1];
+            mut_alle_j  = all_variants[j].split('_')[-1]
 
-            j_poly    = df_poly[df_poly['polymorphic_index'] == trait_site_j];
-            j_align   = j_poly.iloc[0].alignment;
-            dis       = abs(int(j_align)-int(i_align));#distance between mask variant and target variant, > 0
+            j_poly    = df_poly[df_poly['polymorphic_index'] == trait_site_j]
+            j_align   = j_poly.iloc[0].alignment
+            dis       = abs(int(j_align)-int(i_align))#distance between mask variant and target variant, > 0
 
             if trait_site_i != trait_site_j:
-                jj_poly    = j_poly[j_poly['nucleotide'] == mut_alle_j];
+                jj_poly    = j_poly[j_poly['nucleotide'] == mut_alle_j]
                 if len(jj_poly)>0:
-                    j_TF       = jj_poly.iloc[0].TF;
+                    j_TF       = jj_poly.iloc[0].TF
                     nuc_index  = NUC.index(mut_alle_j) + trait_site_j*5
                     TF_index   = NUC.index(j_TF) + trait_site_j*5
-                    sc_j_0     = jj_poly.iloc[0].sc_MPL;
-                    sc_j_1     = sc[nuc_index]-sc[TF_index];
-                    sij        = sc_j_0 - sc_j_1;
+                    sc_j_0     = jj_poly.iloc[0].sc_MPL
+                    sc_j_1     = sc[nuc_index]-sc[TF_index]
+                    sij        = sc_j_0 - sc_j_1
                 else:
-                    print('wrong with %s,site is %d,allele is %s'%(all_variants[j],trait_site_j,mut_alle_j));
+                    print('wrong with %s,site is %d,allele is %s'%(all_variants[j],trait_site_j,mut_alle_j))
             else:
                 sij = 0 #let sij = 0 for the same sites
 
-            fsij.write('%s,%s,%s,%s,%s,%s\n'%(trait_site_i,mut_alle_i,trait_site_j,mut_alle_j,sij,dis));
+            fsij.write('%s,%s,%s,%s,%s,%s\n'%(trait_site_i,mut_alle_i,trait_site_j,mut_alle_j,sij,dis))
 
         #escape part
         dis       = 'nan'
         for j in range(len(traitsite)):
             variant_j = 'epi'+str(int(j))
-            p_poly    = df_poly[df_poly['polymorphic_index'] == traitsite[j][0]];
-            pp_poly   = p_poly[p_poly['nucleotide'] != p_poly['TF']];
-            pc_j_0    = pp_poly.iloc[0].pc_MPL;
-            pc_j_1    = sc[j-len(traitsite)];
-            sij       = pc_j_0 - pc_j_1;
-            fsij.write('%s,%s,%s,%s,%s,%s\n'%(trait_site_i,mut_alle_i,variant_j,trait_alle,sij,dis));
+            p_poly    = df_poly[df_poly['polymorphic_index'] == traitsite[j][0]]
+            pp_poly   = p_poly[p_poly['nucleotide'] != p_poly['TF']]
+            tc_j_0    = pp_poly.iloc[0].tc_MPL
+            tc_j_1    = sc[j-len(traitsite)]
+            sij       = tc_j_0 - tc_j_1
+            fsij.write('%s,%s,%s,%s,%s,%s\n'%(trait_site_i,mut_alle_i,variant_j,trait_alle,sij,dis))
 
     for i in range(len(traitsite)):
         #get site and allele for mask variant
         variant_i = 'epi'+str(int(i))
-        sc        = np.loadtxt('%s/output/%s/sc_epi%d.dat'%(HIV_DIR,tag,i));
+        sc        = np.loadtxt('%s/output/%s/sc_epi%d.dat'%(HIV_DIR,tag,i))
         dis       = 'nan'
         # individual site part
         for j in range(len(all_variants)):
             trait_site_j = int(all_variants[j].split('_')[0])
-            mut_alle_j  = all_variants[j].split('_')[-1];
+            mut_alle_j  = all_variants[j].split('_')[-1]
 
-            j_poly    = df_poly[df_poly['polymorphic_index'] == trait_site_j];
-            j_align   = j_poly.iloc[0].alignment;
+            j_poly    = df_poly[df_poly['polymorphic_index'] == trait_site_j]
+            j_align   = j_poly.iloc[0].alignment
 
             if trait_site_j not in traitsite[i]:
-                jj_poly    = j_poly[j_poly['nucleotide'] == mut_alle_j];
+                jj_poly    = j_poly[j_poly['nucleotide'] == mut_alle_j]
                 if len(jj_poly)>0:
-                    j_TF       = jj_poly.iloc[0].TF;
+                    j_TF       = jj_poly.iloc[0].TF
                     nuc_index  = NUC.index(mut_alle_j) + trait_site_j*5
                     TF_index   = NUC.index(j_TF) + trait_site_j*5
-                    sc_j_0     = jj_poly.iloc[0].sc_MPL;
-                    sc_j_1     = sc[nuc_index]-sc[TF_index];
-                    sij        = sc_j_0 - sc_j_1;
+                    sc_j_0     = jj_poly.iloc[0].sc_MPL
+                    sc_j_1     = sc[nuc_index]-sc[TF_index]
+                    sij        = sc_j_0 - sc_j_1
                 else:
-                    print('wrong with %s,site is %d,allele is %s'%(all_variants[j],trait_site_j,mut_alle_j));
+                    print('wrong with %s,site is %d,allele is %s'%(all_variants[j],trait_site_j,mut_alle_j))
             else:
                 sij = 0 #let sij = 0 for the sites within the epitope
 
-            fsij.write('%s,%s,%s,%s,%s,%s\n'%(variant_i,trait_alle,trait_site_j,mut_alle_j,sij,dis));
+            fsij.write('%s,%s,%s,%s,%s,%s\n'%(variant_i,trait_alle,trait_site_j,mut_alle_j,sij,dis))
 
         #escape part
         for j in range(len(traitsite)):
             variant_j = 'epi'+str(int(j))
-            p_poly    = df_poly[df_poly['polymorphic_index'] == traitsite[j][0]];
-            pp_poly   = p_poly[p_poly['nucleotide'] != p_poly['TF']];
+            p_poly    = df_poly[df_poly['polymorphic_index'] == traitsite[j][0]]
+            pp_poly   = p_poly[p_poly['nucleotide'] != p_poly['TF']]
             if j != i :
-                pc_j_0  = pp_poly.iloc[0].pc_MPL;
-                pc_j_1  = sc[j-len(traitsite)];
-                sij     = pc_j_0 - pc_j_1;
+                tc_j_0  = pp_poly.iloc[0].tc_MPL
+                tc_j_1  = sc[j-len(traitsite)]
+                sij     = tc_j_0 - tc_j_1
             else:
                 sij = 0
-            fsij.write('%s,%s,%s,%s,%s,%s\n'%(variant_i,trait_alle,variant_j,trait_alle,sij,dis));
+            fsij.write('%s,%s,%s,%s,%s,%s\n'%(variant_i,trait_alle,variant_j,trait_alle,sij,dis))
 
-    fsij.close();
+    fsij.close()
