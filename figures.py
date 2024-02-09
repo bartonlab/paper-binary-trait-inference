@@ -93,6 +93,7 @@ DEF_SUBLABELPROPS = {
 }
 
 ############# PLOTTING  FUNCTIONS #############
+
 def read_file(name):
     trait = []
     p = open(SIM_DIR+'/jobs/'+name,'r')
@@ -114,6 +115,7 @@ def read_file(name):
         for j in range(len(trait[i])):
             trait[i][j] = int(trait[i][j])
     return trait
+
 
 def plot_example_mpl(**pdata):
     """
@@ -216,7 +218,7 @@ def plot_example_mpl(**pdata):
     ax_coe1 = plt.subplot(gs_coe1[0, 0])
     ax_coe2 = plt.subplot(gs_coe2[0, 0])
 
-    dx = -0.03
+    dx = -0.04
     dy = -0.02
 
     ## a -- all allele trajectories together
@@ -258,12 +260,12 @@ def plot_example_mpl(**pdata):
                'axoffset':    0.1,
                'theme':       'open' }
 
-    traj_legend_x  =  300
+    traj_legend_x  = 220
     traj_legend_y  = [0.65, 0.40]
     traj_legend_t  = ['Trait\nfrequency','Individual \nallele frequency']
 
     for k in range(len(traj_legend_y)):
-        x1 = traj_legend_x-90
+        x1 = traj_legend_x-50
         x2 = traj_legend_x-10
         y1 = traj_legend_y[0] + (0.5-k) * 0.03
         y2 = traj_legend_y[1] + (0.5-k) * 0.03
@@ -333,7 +335,7 @@ def plot_example_mpl(**pdata):
     coef_legend_t  = ['Beneficial', 'Neutral', 'Deleterious']
     for k in range(len(coef_legend_y)):
         mp.error(ax=ax_coe1, x=[[coef_legend_x+coef_legend_d]], y=[[coef_legend_y[k]]], \
-        edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+                 edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
         ax_coe1.text(coef_legend_x, coef_legend_y[k], coef_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
 
     yy =  0.02 + 3.5 * coef_legend_dy
@@ -347,7 +349,7 @@ def plot_example_mpl(**pdata):
 
     sprops = { 'lw' : 0, 's' : 9., 'marker' : 'o' }
 
-    pprops = { 'xlim':        [-0.3,   3],
+    pprops = { 'xlim':        [-0.3,   6],
                'ylim':        [   0,0.16],
                'yticks':      [   0,0.08,0.16],
                'yminorticks': [0.02,0.04,0.06,0.10,0.12,0.14],
@@ -370,7 +372,7 @@ def plot_example_mpl(**pdata):
     plotprops = DEF_ERRORPROPS.copy()
     plotprops['alpha'] = 1
     for i in range(n_tra):
-        xdat = [np.random.normal(0.5, 0.08)]
+        xdat = [np.random.normal(0.5, 0.18)]
         ydat = [s_inf[offset+i]]
         yerr = np.sqrt(ds[offset+i][offset+i])
         if i==n_tra-1:
@@ -380,22 +382,23 @@ def plot_example_mpl(**pdata):
             mp.error(ax=ax_coe2, x=[xdat], y=[ydat], yerr=[yerr], \
             edgecolor=[c_coe2[i]], facecolor=[c_coe2_lt[i]], plotprops=plotprops, **pprops)
 
+    coef_legend_d  = -0.15 * (6.3 / 4.3)
     coef_legend_x  =  1.8
-    coef_legend_dy = -0.025
+    coef_legend_dy = -0.11 * (0.16 / 0.9)  #-0.02
     coef_legend_y  = []
     coef_legend_t  = []
     for i in range(len(trait_site)):
         coef_legend_y.append(0.135 + i * coef_legend_dy)
-        coef_legend_t.append('Trait%d'%(i+1))
+        coef_legend_t.append('Trait %d'%(i+1))
     for k in range(len(coef_legend_y)):
-        mp.error(ax=ax_coe2, x=[[coef_legend_x+coef_legend_d]], y=[[coef_legend_y[k]]], \
-        edgecolor=[c_coe2[k]], facecolor=[c_coe2_lt[k]], plotprops=plotprops, **pprops)
+        mp.error(ax=ax_coe2, x=[[coef_legend_x+coef_legend_d+0.03]], y=[[coef_legend_y[k]]], \
+                 edgecolor=[c_coe2[k]], facecolor=[c_coe2_lt[k]], plotprops=plotprops, **pprops)
         ax_coe2.text(coef_legend_x, coef_legend_y[k], coef_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
 
     yy =  0.135 +(0.5+n_tra) * coef_legend_dy
-    mp.line(ax=ax_coe2, x=[[coef_legend_x-0.21, coef_legend_x-0.09]], y=[[yy, yy]], \
+    mp.line(ax=ax_coe2, x=[[coef_legend_x-0.24, coef_legend_x-0.09]], y=[[yy, yy]], \
     colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
-    ax_coe2.text(coef_legend_x, yy, 'True \ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
+    ax_coe2.text(coef_legend_x, yy, 'True\ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
 
     ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
@@ -615,8 +618,8 @@ def plot_sc_escape(**pdata):
     goldh = w / 1.5
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_old = dict(left=0.15, right=0.92, bottom=0.55, top=0.90)
-    box_new = dict(left=0.15, right=0.92, bottom=0.15, top=0.50)
+    box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
+    box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
     gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
     gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
     ax_old  = plt.subplot(gs_old[0, 0])
@@ -660,6 +663,7 @@ def plot_sc_escape(**pdata):
     # SAVE FIGURE
     plt.savefig('%s/sc_escape.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
 
+
 def plot_tc_rec(**pdata):
     """
     a. Histogram of trait coefficients with recombination
@@ -687,8 +691,8 @@ def plot_tc_rec(**pdata):
     goldh = w / 1.5
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_old = dict(left=0.15, right=0.92, bottom=0.55, top=0.90)
-    box_new = dict(left=0.15, right=0.92, bottom=0.15, top=0.50)
+    box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
+    box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
     gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
     gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
     ax_old  = plt.subplot(gs_old[0, 0])
@@ -730,6 +734,7 @@ def plot_tc_rec(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/tc_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+
 
 def plot_histogram_fraction_HIV(**pdata):
     """
@@ -807,7 +812,7 @@ def plot_histogram_fraction_HIV(**pdata):
     goldh = w / 1.1
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_tc   = dict(left=0.15, right=0.92, bottom=0.55, top=0.92)
+    box_tc   = dict(left=0.15, right=0.92, bottom=0.59, top=0.96)
     box_frac = dict(left=0.15, right=0.92, bottom=0.12, top=0.42)
 
     gs_frac  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_frac)
@@ -875,11 +880,11 @@ def plot_histogram_fraction_HIV(**pdata):
     mp.plot(type='line', ax=ax_frac, x=[time], y=[AveFraction],colors=[C_NEU], **pprops)
 
     # legend
-    traj_legend_x  =  np.log(300)
-    traj_legend_y  = [1.0, 0.85]
-    traj_legend_t  = ['Individual','Average']
+    traj_legend_x =  np.log(300)
+    traj_legend_y = [1.0, 0.87]
+    traj_legend_t = ['Individual', 'Average']
 
-    x1 = traj_legend_x-0.6
+    x1 = traj_legend_x-0.4
     x2 = traj_legend_x-0.1
     y1 = traj_legend_y[0] + 0.015
     y2 = traj_legend_y[1] + 0.015
@@ -898,6 +903,7 @@ def plot_histogram_fraction_HIV(**pdata):
     # SAVE FIGURE
     plt.savefig('%s/fig3.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure 3 done.')
+
 
 def plot_figure_4(**pdata):
     """
@@ -978,7 +984,7 @@ def plot_figure_4(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Variant frequency\nfor CH%s\n'%(patient[-3:]),
+               'ylabel':      'Variant frequency',
                'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
                'axoffset':    0.1,
                'theme':       'open',
@@ -1051,11 +1057,12 @@ def plot_figure_4(**pdata):
         pprops['plotprops']['alpha'] = 0.4
         mp.plot(type='line',ax=ax_lend, x=[[x1, x2]], y=[[y2, y2]], colors=[var_color[k]], **pprops)
 
-    ax_lend.text(-1.5, 2.5, '3\' half-genome \nfor CH470', ha='left', va='center', **DEF_LABELPROPS)
+    #ax_lend.text(-1.5, 2.5, '3\' half-genome \nfor CH470', ha='left', va='center', **DEF_LABELPROPS)
 
     # SAVE FIGURE
     plt.savefig('%s/fig4.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure 4 done.')
+
 
 def plot_figure_5(**pdata):
     """
@@ -1139,7 +1146,6 @@ def plot_figure_5(**pdata):
         ydat = [var_traj[j]]
         mp.plot(type='line', ax=ax_traj, x=xdat, y=ydat, colors=[var_c[j]], **pprops)
 
-
     ax_traj.text(box_traj['left']+dx, box_traj['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # b,c -- selection coefficients inferred by MPL (new and old)
@@ -1198,15 +1204,16 @@ def plot_figure_5(**pdata):
     cBG = '#F5F5F5'
     ddx = 0.01
     ddy = 0.01
-    rec = matplotlib.patches.Rectangle(xy=((box_coef['right']+box_coef['left'])/2-3*ddx, box_coef['bottom']-(0.7*ddy)),
-                                       width=box_coef['right']-(box_coef['right']+box_coef['left'])/2+(0.2*ddx),
-                                       height=box_coef['top']-box_coef['bottom']+(1.7*ddy), \
-                                       transform=fig.transFigure, ec=None, fc=cBG, clip_on=False, zorder=-100)
+    rec = matplotlib.patches.Rectangle(xy=((box_coef['right']+box_coef['left'])/2-2*ddx, box_coef['bottom']-(17.0*ddy)),
+                                            width=box_coef['right']-(box_coef['right']+box_coef['left'])/2 - (2.2*ddx),
+                                            height=box_coef['top']-box_coef['bottom']+(18.2*ddy), \
+                                            transform=fig.transFigure, ec=None, fc=cBG, clip_on=False, zorder=-100)
     rec = ax_coef[1].add_patch(rec)
 
     # SAVE FIGURE
     plt.savefig('%s/fig5.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure 5 done.')
+
 
 def plot_figure_6(**pdata):
 
@@ -1384,7 +1391,7 @@ def plot_figure_6(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Variant frequency\nfor CH 470\n',
+               'ylabel':      'Variant frequency',
                'plotprops':   {'lw': SIZELINE, 'ls': '-'},
                'axoffset':    0.1,
                'theme':       'open',
@@ -1473,7 +1480,7 @@ def plot_figure_6(**pdata):
         ax_sij.text(len(ds_matrix) + i + 0.8, 0.8, '%s' % var_tag[i], **txtprops)
 
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, clip_on=False)
-    ax_sij.text(6.5, -1, 'Variant i', **txtprops)
+    ax_sij.text(6.5, -1, 'Variant $i$', **txtprops)
     ax_sij.text(5.5,11.5, 'Most influential variants', **txtprops)
     ax_sij.text(11.8,11.5, 'Epitopes', **txtprops)
 
@@ -1483,17 +1490,18 @@ def plot_figure_6(**pdata):
     ax_sij.text(  6.5, y_label,   0, **txtprops)
     ax_sij.text(  8.5, y_label,  -2, **txtprops)
     ax_sij.text( 10.5, y_label,  -2, **txtprops)
-    ax_sij.text(  6.5, y_label+1, 'Effect of variant i on inferred\nselection coefficient,'+' $\hat{s_j}$'+\
-                          ', $\Delta s_{ij}$ (%)', ha='center', va='center', **DEF_LABELPROPS)
+    ax_sij.text(  6.5, y_label+1, 'Effect of variant $i$ on inferred\nselection coefficient '+' $\hat{s}_j$'+\
+                          ', $\Delta \hat{s}_{ij}$ (%)', ha='center', va='center', **DEF_LABELPROPS)
 
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, rotation=90)
-    ax_sij.text(-2.2, 7, 'Target variant j', **txtprops)
+    ax_sij.text(-2.2, 7, 'Target variant $j$', **txtprops)
 
     ax_sij.text(box_sij['left']+dx, box_ss['top']+dy, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
     plt.savefig('%s/fig6.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('figure 6 done.')
+
 
 def plotReversionFaction(**pdata):
     """
@@ -1963,13 +1971,13 @@ def plot_histogram_sim_rec(**pdata):
     ## set up figure grid
 
     w     = DOUBLE_COLUMN
-    goldh = w / 2.2
+    goldh = w / 2.4
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_s_old   = dict(left=0.10, right=0.62, bottom=0.55, top=0.95)
-    box_t_old   = dict(left=0.69, right=0.92, bottom=0.55, top=0.95)
-    box_s_new   = dict(left=0.10, right=0.62, bottom=0.10, top=0.50)
-    box_t_new   = dict(left=0.69, right=0.92, bottom=0.10, top=0.50)
+    box_s_old   = dict(left=0.10, right=0.62, bottom=0.59, top=0.95)
+    box_t_old   = dict(left=0.69, right=0.92, bottom=0.59, top=0.95)
+    box_s_new   = dict(left=0.10, right=0.62, bottom=0.10, top=0.46)
+    box_t_new   = dict(left=0.69, right=0.92, bottom=0.10, top=0.46)
 
     gs_s_old   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_s_old)
     gs_t_old   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_t_old)
