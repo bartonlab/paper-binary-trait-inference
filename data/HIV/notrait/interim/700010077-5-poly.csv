@@ -94,5 +94,5 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,nucleotide,TF,consens
 45,3650,4431,0,T,T,T,nan,False,False,0,0,1.0000e+00,9.4118e-01,1.0000e+00,1.0000e+00
 46,3769,4550,0,A,A,A,nan,False,False,0,0,1.0000e+00,9.4118e-01,1.0000e+00,1.0000e+00
 46,3769,4550,0,G,A,A,nan,False,False,0,0,0.0000e+00,5.8824e-02,0.0000e+00,0.0000e+00
-47,3899,4680,1,A,G,G,DEPAAVGVG,False,False,0,0,0.0000e+00,5.8824e-02,0.0000e+00,0.0000e+00
-47,3899,4680,0,G,G,G,DEPAAVGVG,False,False,0,0,1.0000e+00,9.4118e-01,1.0000e+00,1.0000e+00
+47,3899,4680,1,A,G,G,nan,False,False,0,0,0.0000e+00,5.8824e-02,0.0000e+00,0.0000e+00
+47,3899,4680,0,G,G,G,nan,False,False,0,0,1.0000e+00,9.4118e-01,1.0000e+00,1.0000e+00

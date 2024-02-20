@@ -14,6 +14,7 @@ SIM_DIR = 'data/simulation'
 FIG_DIR = 'figures'
 
 NUC = ['-', 'A', 'C', 'G', 'T']
+ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+++++++++++++++++++++++++++'
 
 # FUNCTIONS
 def index2frame(i):
@@ -121,113 +122,80 @@ def read_file(name):
             poly[i][j] = int(poly[i][j])
     return poly
 
-def get_unique_sequence(tag,i,j):
-    seq = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
-    #initial states
-    states = []
-    if len(j) == 1:
-        initial_states = [seq[0][i+2],seq[0][i+j[0]+2]]
-        states.append(initial_states)
-        for l in range(len(seq)):
-            temp_states = [seq[l][i+2],seq[l][i+j[0]+2]]
-            temp_states = np.trunc(temp_states)
-            temp_states = list(temp_states)
-            n = 0
-            for jj in range(len(states)):
-                current_states = list(states[jj])
-                if current_states != temp_states:
-                    n += 1
-            if n == len(states):
-                states.append(temp_states)
-    elif len(j) == 2:
-        initial_states = [seq[0][i+2],seq[0][i+j[0]+2],seq[0][i+j[1]+2]]
-        states.append(initial_states)
-        for l in range(len(seq)):
-            temp_states = [seq[l][i+2],seq[l][i+j[0]+2],seq[l][i+j[1]+2]]
-            temp_states = np.trunc(temp_states)
-            temp_states = list(temp_states)
-            n = 0
-            for jj in range(len(states)):
-                current_states = list(states[jj])
-                if current_states != temp_states:
-                    n += 1
-            if n == len(states):
-                states.append(temp_states)
-    else:
-        print('error')
-    return states
+# def get_unique_sequence(tag,i,j):
+#     seq = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+#     #initial states
+#     states = []
+#     if len(j) == 1:
+#         initial_states = [seq[0][i+2],seq[0][i+j[0]+2]]
+#         states.append(initial_states)
+#         for l in range(len(seq)):
+#             temp_states = [seq[l][i+2],seq[l][i+j[0]+2]]
+#             temp_states = np.trunc(temp_states)
+#             temp_states = list(temp_states)
+#             n = 0
+#             for jj in range(len(states)):
+#                 current_states = list(states[jj])
+#                 if current_states != temp_states:
+#                     n += 1
+#             if n == len(states):
+#                 states.append(temp_states)
+#     elif len(j) == 2:
+#         initial_states = [seq[0][i+2],seq[0][i+j[0]+2],seq[0][i+j[1]+2]]
+#         states.append(initial_states)
+#         for l in range(len(seq)):
+#             temp_states = [seq[l][i+2],seq[l][i+j[0]+2],seq[l][i+j[1]+2]]
+#             temp_states = np.trunc(temp_states)
+#             temp_states = list(temp_states)
+#             n = 0
+#             for jj in range(len(states)):
+#                 current_states = list(states[jj])
+#                 if current_states != temp_states:
+#                     n += 1
+#             if n == len(states):
+#                 states.append(temp_states)
+#     else:
+#         print('error')
+#     return states
 
-def get_frame(tag, polymorphic_sites, nuc):
+def get_frame(tag, poly, nuc, i_alig, i_HXB2, shift, TF_sequence,polymorphic_sites,poly_states):
     """ Return number of reading frames in which the input nucleotide is nonsynonymous in context, compared to T/F. """
 
-    df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic','HXB2','TF'])
     ns = []
 
-    n_frame = df_sequence[df_sequence['polymorphic'] == polymorphic_sites]
-    i = n_frame.iloc[0].alignment # index for the polymorphic site in index file
-    i_HXB2 = int(n_frame.iloc[0].HXB2)
     frames = index2frame(i_HXB2)
-
+    
+    match_states = poly_states[poly_states.T[polymorphic_sites.index(i_alig)]==NUC.index(nuc)]
+    
     for fr in frames:
 
-        pos = int((i_HXB2-fr)%3) # position of the nucleotide in the reading frame
-        TF_codon = df_sequence.iloc[i-pos].TF + df_sequence.iloc[i-pos+1].TF + df_sequence.iloc[i-pos+2].TF
-        TF_codon = [a for a in TF_codon]
+        pos = int((i_HXB2+shift-fr)%3) # position of the nucleotide in the reading frame
+        TF_codon = [temp_nuc for temp_nuc in TF_sequence[i_alig-pos:i_alig-pos+3]]
 
         if len(TF_codon)<3:
-            print('\tmutant at site %d in codon that does not terminate in alignment, assuming syn' % i)
+            print('\tmutant at site %d in codon for CH%s that does not terminate in alignment' % (i_alig,tag[-5:]))
 
         else:
-            mut_codon = [a for a in TF_codon]
-            mut_codon[pos] = nuc
-            replace_indices = [k for k in range(3) if isnan(df_sequence.iloc[k+i-pos].polymorphic) != True and k!=pos]
+            mut_codon       = [a for a in TF_codon]
+            mut_codon[pos]  = nuc
+            replace_indices = [k for k in range(3) if (k+i_alig-pos) in polymorphic_sites and k!=pos]
 
             # If any other sites in the codon are polymorphic, consider mutation in context
-            if len(replace_indices) > 0:
-                dd = len(replace_indices) + 1
-                #print('there are %d polymorphic sites in this codon'%dd)
-                k_index = []
-
-                if len(replace_indices) == 2:
-                    k_1 = replace_indices[0]
-                    k_2 = replace_indices[1]
-                    k_index.append(k_1-pos)
-                    k_index.append(k_2-pos)
-                elif len(replace_indices) == 1:
-                    k = replace_indices[0]
-                    if   pos == 0:
-                        k_index.append(1)
-                    elif pos == 2:
-                        k_index.append(-1)
-                    elif pos == 1:
-                        k_index.append(k-1)
-                else:
-                    print('error, there are more than 3 nucleotides in one codon')
-
+            if len(replace_indices)>0:
                 is_ns = False
-                match_states = get_unique_sequence(tag,polymorphic_sites,k_index)
                 for s in match_states:
-                    TF_codon = df_sequence.iloc[i-pos].TF + df_sequence.iloc[i-pos+1].TF + df_sequence.iloc[i-pos+2].TF
-                    TF_codon = [a for a in TF_codon]
-                    # possible codon
-                    if len(replace_indices) == 1:
-                        mut_codon[k] = NUC[int(s[1])]
-                        TF_codon[k]  = NUC[int(s[1])]
-                        ss = [NUC.index(mut_codon[pos]),NUC.index(mut_codon[k])]
-                    elif len(replace_indices) == 2:
-                        mut_codon[k_1] = NUC[int(s[1])]
-                        TF_codon[k_1]  = NUC[int(s[1])]
-                        mut_codon[k_2] = NUC[int(s[2])]
-                        TF_codon[k_2]  = NUC[int(s[2])]
-                        ss = [NUC.index(mut_codon[pos]),NUC.index(mut_codon[k_1]),NUC.index(mut_codon[k_2])]
-                    #check if this codon can be observed
-                    if ss in match_states:
-                        if codon2aa(mut_codon)!=codon2aa(TF_codon):
-                            is_ns = True
+                    TF_codon = [temp_nuc for temp_nuc in TF_sequence[i_alig-pos:i_alig-pos+3]]
+                    for k in replace_indices:
+                        mut_codon[k] = NUC[s[polymorphic_sites.index(k+i_alig-pos)]]
+                        TF_codon[k]  = NUC[s[polymorphic_sites.index(k+i_alig-pos)]]
+                    if codon2aa(mut_codon) != codon2aa(TF_codon):
+                        is_ns = True
                 if is_ns:
                     ns.append(fr)
+
             elif codon2aa(mut_codon) != codon2aa(TF_codon):
                 ns.append(fr)
+
     return ns
 
 def find_trait_site(tag,min_n):
@@ -239,28 +207,45 @@ def find_trait_site(tag,min_n):
     df_poly  = pd.read_csv('%s/notrait/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
     df_epi   = pd.read_csv('%s/epitopes.csv'%HIV_DIR, comment='#', memory_map=True)
 
+    df_index = pd.read_csv('../paper-MPL-inference-master/data/HIV/processed/%s-index.csv' %(tag), comment='#', memory_map=True)
+    # TF sequence
+    TF_sequence = []
+    for i in range(len(df_index)):
+        TF_sequence.append(df_index.iloc[i].TF)
+    # alignment for polymorphic sites
+    df_index_p  = df_index[df_index['polymorphic'].notna()]
+    polymorphic_sites  = []
+    for i in range(len(df_index_p)):
+        polymorphic_sites.append(int(df_index_p.iloc[i].alignment))
+    # sequence for polymorphic sites
+    seq = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    poly_times = np.zeros(len(seq))
+    poly_states = np.zeros((len(seq),len(seq[0])-2),dtype=int)
+    for i in range(len(seq)):
+        poly_times[i] = int(seq[i][0])
+        for j in range(len(seq[0])-2):
+            poly_states[i][j] = int(seq[i][j+2])
+
     escape_values = ['False'] * len(df_poly)  # define the inserted column "escape"
 
     df_poly['epitope'].notna()
 
     for i in range(len(df_poly)):
-        if pd.notna(df_poly.at[i, 'epitope']) and df_poly.iloc[i].nonsynonymous > 0:
+        if pd.notna(df_poly.at[i, 'epitope']) and df_poly.iloc[i].nonsynonymous > 0 and df_poly.iloc[i].nucleotide != df_poly.iloc[i].TF:
             poly = int(df_poly.iloc[i].polymorphic_index)
             nons = df_poly.iloc[i].nonsynonymous
-
-            """ get the corresponding reading frame"""
+            i_alig = df_poly.iloc[i].alignment_index
             HXB2_s = df_poly.iloc[i].HXB2_index
-            if isinstance(HXB2_s, str) == True:
-                HXB2_1 = re.findall('\d+', HXB2_s)
-                HXB2_i = int(int(HXB2_1[0]))
-            elif isinstance(HXB2_s, (int,np.int32,np.int64)) == True:
-                HXB2_i = int(HXB2_s)
 
-            else:
-                print('polymorphic site %d in %s needs double check (data type is)' %(HXB2_s,tag))
-                print(type(HXB2_s))
-                break
-            frames = index2frame(HXB2_i)
+            # get HXB2 index and shift
+            try:
+                i_HXB2 = int(HXB2_s)
+                shift = 0
+            except:
+                i_HXB2 = int(HXB2_s[:-1])
+                shift = ALPHABET.index(HXB2_s[-1]) + 1
+            
+            frames = index2frame(i_HXB2)
 
             """ judge if this site is trait site """
             if len(frames) == nons : #the mutation in this site is nonsynonymous in all reading frame
@@ -268,7 +253,7 @@ def find_trait_site(tag,min_n):
             else:
                 """get the reading frame of the mutant site"""
                 nuc = df_poly.iloc[i].nucleotide
-                nonsfram = get_frame(tag, poly, nuc)
+                nonsfram = get_frame(tag, poly, nuc, i_alig, i_HXB2, shift, TF_sequence, polymorphic_sites, poly_states)
 
                 """get the reading frame of the epitope"""
                 df       = df_epi[(df_epi.epitope == df_poly.iloc[i].epitope)]
@@ -279,7 +264,7 @@ def find_trait_site(tag,min_n):
                     escape_values[i] = 'True'
 
     """modify the csv file and save it"""
-    columns_to_remove = ['exposed', 'edge_gap','flanking','glycan']
+    columns_to_remove = ['exposed', 'edge_gap','flanking']
     df_poly = df_poly.drop(columns=columns_to_remove)
 
     df_poly.insert(4, 'escape', escape_values)
@@ -409,7 +394,7 @@ def analyze_result(tag,verbose=True):
     df_poly = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
 
     index_cols  = ['polymorphic_index', 'alignment_index', 'HXB2_index','nonsynonymous','escape','nucleotide',]
-    index_cols += ['TF','consensus','epitope','exposed','edge_gap','flanking','glycan','s_MPL','s_SL']
+    index_cols += ['TF','consensus','epitope','exposed','edge_gap','flanking','s_MPL','s_SL']
     cols = [i for i in list(df_poly) if i not in index_cols]
     times = [int(cols[i].split('_')[-1]) for i in range(len(cols))]
 

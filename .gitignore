@@ -8,8 +8,9 @@ __pycache__
 */.DS_Store
 */*/.DS_Store
 
-# Jupyter notebook files
+# Jupyter notebook and compile files
 *.json
+src/mpl
 
 # Unnecessary files 
 newtry.ipynb

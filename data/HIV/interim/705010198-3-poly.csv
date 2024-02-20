@@ -111,8 +111,8 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,escape,nucleotide,TF,
 52,1646,6657,0,False,A,A,A,nan,1.0,1.0,0.92593
 52,1646,6657,1,False,G,A,A,nan,0.0,0.0,0.037037
 53,1647,6658,1,False,-,C,A,nan,0.0,0.0,0.037037
-53,1647,6658,0,False,A,C,A,nan,0.0,0.0,0.037037
-53,1647,6658,1,False,C,C,A,nan,1.0,1.0,0.92593
+53,1647,6658,1,False,A,C,A,nan,0.0,0.0,0.037037
+53,1647,6658,0,False,C,C,A,nan,1.0,1.0,0.92593
 54,1648,6659,1,False,-,C,C,nan,0.0,0.0,0.037037
 54,1648,6659,0,False,C,C,C,nan,1.0,1.0,0.92593
 54,1648,6659,0,False,T,C,C,nan,0.0,0.0,0.037037
@@ -120,8 +120,8 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,escape,nucleotide,TF,
 55,1649,6660,0,False,C,C,A,nan,1.0,1.0,0.92593
 55,1649,6660,1,False,G,C,A,nan,0.0,0.0,0.037037
 56,1650,6661,1,False,-,A,A,nan,0.0,0.0,0.037037
-56,1650,6661,1,False,A,A,A,nan,1.0,1.0,0.92593
-56,1650,6661,0,False,G,A,A,nan,0.0,0.0,0.037037
+56,1650,6661,0,False,A,A,A,nan,1.0,1.0,0.92593
+56,1650,6661,1,False,G,A,A,nan,0.0,0.0,0.037037
 57,1651,6662,1,False,-,C,C,nan,0.0,0.0,0.037037
 57,1651,6662,0,False,C,C,C,nan,1.0,1.0,0.92593
 57,1651,6662,0,False,T,C,C,nan,0.0,0.0,0.037037
@@ -131,9 +131,9 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,escape,nucleotide,TF,
 59,1654,6665,0,False,T,T,T,nan,1.0,1.0,0.96296
 60,1655,6666,0,False,A,A,A,nan,1.0,1.0,0.96296
 60,1655,6666,1,False,G,A,A,nan,0.0,0.0,0.037037
-61,1656,6667,1,False,A,A,A,nan,1.0,1.0,0.92593
+61,1656,6667,0,False,A,A,A,nan,1.0,1.0,0.92593
 61,1656,6667,1,False,G,A,A,nan,0.0,0.0,0.037037
-61,1656,6667,0,False,T,A,A,nan,0.0,0.0,0.037037
+61,1656,6667,1,False,T,A,A,nan,0.0,0.0,0.037037
 62,1657,6668,0,False,C,T,T,nan,0.0,0.0,0.037037
 62,1657,6668,0,False,T,T,T,nan,1.0,1.0,0.96296
 63,1659,6670,1,False,A,G,A,nan,0.0,0.0,0.18519
@@ -343,8 +343,8 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,escape,nucleotide,TF,
 161,2589,7588,1,False,T,C,C,nan,0.0,0.0,0.037037
 162,2600,7599,1,False,A,G,G,nan,0.0,0.0,0.074074
 162,2600,7599,0,False,G,G,G,nan,1.0,1.0,0.92593
-163,2601,7600,0,False,A,G,G,nan,0.0,0.0,0.7037
-163,2601,7600,1,False,G,G,G,nan,1.0,1.0,0.2963
+163,2601,7600,1,False,A,G,G,nan,0.0,0.0,0.7037
+163,2601,7600,0,False,G,G,G,nan,1.0,1.0,0.2963
 164,2643,7615,0,False,A,A,A,nan,1.0,1.0,0.96296
 164,2643,7615,1,False,G,A,A,nan,0.0,0.0,0.037037
 165,2674,7646,1,False,A,T,T,nan,0.0,0.0,0.037037

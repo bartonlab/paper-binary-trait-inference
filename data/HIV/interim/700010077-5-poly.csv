@@ -94,5 +94,5 @@ polymorphic_index,alignment_index,HXB2_index,nonsynonymous,escape,nucleotide,TF,
 45,3650,4431,0,False,T,T,T,nan,1.0,0.94118,1.0,1.0
 46,3769,4550,0,False,A,A,A,nan,1.0,0.94118,1.0,1.0
 46,3769,4550,0,False,G,A,A,nan,0.0,0.058824,0.0,0.0
-47,3899,4680,1,True,A,G,G,DEPAAVGVG,0.0,0.058824,0.0,0.0
-47,3899,4680,0,False,G,G,G,DEPAAVGVG,1.0,0.94118,1.0,1.0
+47,3899,4680,1,False,A,G,G,nan,0.0,0.058824,0.0,0.0
+47,3899,4680,0,False,G,G,G,nan,1.0,0.94118,1.0,1.0
