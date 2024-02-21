@@ -405,7 +405,6 @@ def plot_example_mpl(**pdata):
     # SAVE FIGURE
     if show_fig:
         plt.savefig('%s/fig1.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-        print('figure 1 done.')
     else:
         plt.savefig('%s/sim/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
         plt.close()
@@ -588,7 +587,6 @@ def plot_histogram_sim(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/fig2.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure 2 done.')
 
 def plot_sc_escape(**pdata):
     """
@@ -2269,16 +2267,16 @@ def plot_trait_site_reversion(**pdata):
             sc_rev_old.append(df_reversion.iloc[i].sc_old)
             sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
 
-    positive_old = [i for i in sc_rev_old if i > 0]
-    positive_new = [i for i in sc_rev_new if i > 0]
+    # positive_old = [i for i in sc_rev_old if i > 0]
+    # positive_new = [i for i in sc_rev_new if i > 0]
 
-    print(f'Totally {len(sc_all_old)} escape mutations and', end=' ')
-    print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reverison mutations')
-    print('For reversion mutations:')
-    print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
-    print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all escape mutations')
-    print(f'After counting escape term, only {len(positive_new)} reversion mutations are positive', end='')
-    print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all escape mutations')
+    # print(f'Totally {len(sc_all_old)} escape mutations and', end=' ')
+    # print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reversion mutations')
+    # print('For reversion mutations:')
+    # print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
+    # print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all escape mutations')
+    # print(f'After counting escape term, only {len(positive_new)} reversion mutations are positive', end='')
+    # print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all escape mutations')
 
     # PLOT FIGURE
     ## set up figure grid
@@ -2304,8 +2302,9 @@ def plot_trait_site_reversion(**pdata):
     pprops = { 'xlim'        : [ -0.05,  0.10],
                'xticks'      : [ -0.05,     0,  0.05, 0.1],
                'xticklabels' : [ ],
-               'ylim'        : [0., 0.50],
-               'yticks'      : [0., 0.25, 0.50],
+               'ylim'        : [0, 1.7], #[0., 0.50],
+               'yticks'      : [0, np.log10(11), np.log10(21),np.log10(51)], #[0., 0.25, 0.50],
+               'yticklabels' : [0,          0.1,          0.2,         0.5],#[0,25, 50],
                'ylabel'      : 'Frequency',
                'theme'       : 'boxed' }
     
@@ -2320,8 +2319,8 @@ def plot_trait_site_reversion(**pdata):
     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
     all_new            = all_new/len(sc_all_new)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(all_old*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(all_new*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
 
     # escape mutations that are also reversions
     rev_old, bin_edges = np.histogram(sc_rev_old, bins=bins)
@@ -2331,50 +2330,51 @@ def plot_trait_site_reversion(**pdata):
     rev_new            = rev_new/len(sc_all_new)
 
     histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(rev_old*100+1)], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(rev_new*100+1)], colors=[C_group[1]], plotprops=histprops, **pprops)
 
     # legend
-    traj_legend_x  =  0.04
-    traj_legend_y  = [0.25,0.32]
-    traj_legend_t  = ['Reversion mutation', 'Not reversion mutation']
+    legend_x  =  0.045
+    title_y   =  np.log10(25) # 0.40
+    legend_y  = [np.log10(9), np.log10(15)]#[0.25,0.32]
+    legend_t  = ['Reversion mutation', 'Not reversion mutation']
 
-    x1 = traj_legend_x-0.01
-    x2 = traj_legend_x-0.004
-    y1 = traj_legend_y[0] + 0.0025
-    y2 = traj_legend_y[1] + 0.0025
+    x1 = legend_x-0.01
+    x2 = legend_x-0.004
+    y1 = legend_y[0] + 0.0025
+    y2 = legend_y[1] + 0.0025
 
     # escape mutations that are also reversions
-    ax_old.text(x1, 0.40, 'Without escape trait', **DEF_LABELPROPS)
+    ax_old.text(x1, title_y, 'Without escape trait', **DEF_LABELPROPS)
     
     mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_old, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
 
-    ax_old.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_old.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # other escape mutations
     pprops['xticks']      = [ -0.05,     0,  0.05, 0.1]
     pprops['xticklabels'] = [    -5,     0,    5,   10]
     pprops['xlabel']      = 'Inferred selection coefficient for escape mutations, ' + r'$\hat{s}$ ' +'(%)'
 
-    ax_new.text(x1, 0.40, 'With escape trait', **DEF_LABELPROPS)
+    ax_new.text(x1, title_y, 'With escape trait', **DEF_LABELPROPS)
     
     lineprops['alpha'] = 1
     mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_new, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
     
-    ax_new.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_new.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # label
     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
     ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/sc_escape_new.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.savefig('%s/sc_escape_reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
 
 def get_participation_ratio(tag):
 
@@ -2546,16 +2546,16 @@ def plot_site_reversion(**pdata):
             sc_rev_old.append(df_reversion.iloc[i].sc_old)
             sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
 
-    positive_old = [i for i in sc_rev_old if i > 0]
-    positive_new = [i for i in sc_rev_new if i > 0]
+    # positive_old = [i for i in sc_rev_old if i > 0]
+    # positive_new = [i for i in sc_rev_new if i > 0]
 
-    print(f'Totally {len(sc_all_old)} mutations and', end=' ')
-    print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reverison mutations')
-    print('For reversion mutations:')
-    print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
-    print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all mutations')
-    print(f'After counting escape term, {len(positive_new)} reversion mutations are positive', end='')
-    print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all mutations')
+    # print(f'Totally {len(sc_all_old)} mutations and', end=' ')
+    # print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reversion mutations')
+    # print('For reversion mutations:')
+    # print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
+    # print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all mutations')
+    # print(f'After counting escape term, {len(positive_new)} reversion mutations are positive', end='')
+    # print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all mutations')
 
     # PLOT FIGURE
     ## set up figure grid
@@ -2581,8 +2581,9 @@ def plot_site_reversion(**pdata):
     pprops = { 'xlim'        : [ -0.06,  0.12],
                'xticks'      : [ -0.06,     0,  0.06, 0.12],
                'xticklabels' : [ ],
-               'ylim'        : [0., 0.40],
-               'yticks'      : [0., 0.20, 0.40],
+               'ylim'        : [0., 1.6],
+               'yticks'      : [0., np.log10(1+1), np.log10(5+1), np.log10(10+1), np.log10(20+1), np.log10(40+1)],
+               'yticklabels' : [0.,          0.01,          0.05,           0.10,           0.20,            0.4],
                'ylabel'      : 'Frequency',
                'theme'       : 'boxed' }
     
@@ -2597,8 +2598,11 @@ def plot_site_reversion(**pdata):
     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
     all_new            = all_new/len(sc_all_new)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
+    log_all_old    = np.log10(all_old*100+1)
+    log_all_new    = np.log10(all_new*100+1)
+
+    mp.bar(ax=ax_old, x=[bar_x], y=[log_all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[log_all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
 
     # reversions mutations 
     rev_old, bin_edges = np.histogram(sc_rev_old, bins=bins)
@@ -2607,44 +2611,48 @@ def plot_site_reversion(**pdata):
     rev_new, bin_edges = np.histogram(sc_rev_new, bins=bins)
     rev_new            = rev_new/len(sc_all_new)
 
+    log_rev_old    = np.log10(rev_old*100+1)
+    log_rev_new    = np.log10(rev_new*100+1)
+
     histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[log_rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[log_rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
 
     # legend
-    traj_legend_x  =  0.04
-    traj_legend_y  = [0.15,0.20]
-    traj_legend_t  = ['All reversion mutation', 'Not reversion mutation']
+    legend_x  =  0.04
+    title_y   =  np.log10(21)
+    legend_y  = [np.log10(12),np.log10(7)]
+    legend_t  = ['All reversion mutation', 'Not reversion mutation']
 
-    x1 = traj_legend_x-0.01
-    x2 = traj_legend_x-0.004
-    y1 = traj_legend_y[0] + 0.0025
-    y2 = traj_legend_y[1] + 0.0025
+    x1 = legend_x-0.01
+    x2 = legend_x-0.004
+    y1 = legend_y[0]+0.025
+    y2 = legend_y[1]+0.025
 
     # reversions mutations
-    ax_old.text(x1, 0.25, 'Without escape trait', **DEF_LABELPROPS)
+    ax_old.text(x1, title_y, 'Without escape trait', **DEF_LABELPROPS)
     
     mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_old, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
 
-    ax_old.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_old.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # other mutations
     pprops['xticks']      = [ -0.06,     0,  0.06, 0.12]
     pprops['xticklabels'] = [    -6,     0,     6,   12]
     pprops['xlabel']      = 'Inferred selection coefficient, ' + r'$\hat{s}$ ' +'(%)'
 
-    ax_new.text(x1, 0.250, 'With escape trait', **DEF_LABELPROPS)
+    ax_new.text(x1, title_y, 'With escape trait', **DEF_LABELPROPS)
     
     lineprops['alpha'] = 1
     mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_new, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
     
-    ax_new.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_new.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # label
     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
@@ -2709,8 +2717,11 @@ def plot_site_escape(**pdata):
     pprops = { 'xlim'        : [ -0.06,  0.12],
                'xticks'      : [ -0.06,     0,  0.06, 0.12],
                'xticklabels' : [ ],
-               'ylim'        : [0., 0.40],
-               'yticks'      : [0., 0.20, 0.40],
+               'ylim'        : [0., 1.6],
+               'yticks'      : [0., np.log10(1+1), np.log10(5+1), np.log10(10+1), np.log10(20+1), np.log10(40+1)],
+               'yticklabels' : [0.,          0.01,          0.05,           0.10,           0.20,            0.4],
+               #'ylim'        : [0., 0.40],
+               #'yticks'      : [0., 0.20, 0.40],
                'ylabel'      : 'Frequency',
                'theme'       : 'boxed' }
     
@@ -2725,8 +2736,8 @@ def plot_site_escape(**pdata):
     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
     all_new            = all_new/len(sc_all_new)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(all_old*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(all_new*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
 
     # escape mutations that are also reversions
     rev_old, bin_edges = np.histogram(sc_esc_old, bins=bins)
@@ -2736,43 +2747,44 @@ def plot_site_escape(**pdata):
     rev_new            = rev_new/len(sc_all_new)
 
     histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(rev_old*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(rev_new*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
 
     # legend
-    traj_legend_x  =  0.04
-    traj_legend_y  = [0.15,0.20]
-    traj_legend_t  = ['Escape mutations', 'Other mutations']
+    legend_x  =  0.04
+    title_y   =  np.log10(21) # 0.25
+    legend_y  = [np.log10(12),np.log10(7)] #[0.15,0.20]
+    legend_t  = ['Escape mutations', 'Other mutations']
 
-    x1 = traj_legend_x-0.01
-    x2 = traj_legend_x-0.004
-    y1 = traj_legend_y[0] + 0.0025
-    y2 = traj_legend_y[1] + 0.0025
+    x1 = legend_x-0.01
+    x2 = legend_x-0.004
+    y1 = legend_y[0] + 0.025 # 0.0025
+    y2 = legend_y[1] + 0.025 # 0.0025
 
     # escape mutations that are also reversions
-    ax_old.text(x1, 0.25, 'Without escape trait', **DEF_LABELPROPS)
+    ax_old.text(x1, title_y, 'Without escape trait', **DEF_LABELPROPS)
     
-    mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
+    mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_old, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
 
-    ax_old.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_old.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_old.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # other escape mutations
     pprops['xticks']      = [ -0.06,     0,  0.06, 0.12]
     pprops['xticklabels'] = [    -6,     0,     6,   12]
     pprops['xlabel']      = 'Inferred selection coefficient, ' + r'$\hat{s}$ ' +'(%)'
 
-    ax_new.text(x1, 0.250, 'With escape trait', **DEF_LABELPROPS)
+    ax_new.text(x1, title_y, 'With escape trait', **DEF_LABELPROPS)
     
     lineprops['alpha'] = 1
-    mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[1]], plotprops=lineprops, **pprops)
+    mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
     lineprops['alpha'] = 0.5
     mp.plot(type='line',ax=ax_new, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
     
-    ax_new.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_new.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_new.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
     # label
     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
@@ -2832,11 +2844,12 @@ def plot_reversion_scatter(**pdata):
     lineprops = dict(lw=SIZELINE, linestyle='--', alpha=0.5)
 
     pprops = { 'xlim'        : [ -0.3,  0.6],
-               'xticklabels' : [ ],
+               'xticks'      : [ ],
                'ylim'        : [ -0.05,  0.10],
                'yticks'      : [ -0.05,     0,  0.05, 0.1],
             #    'ylabel'      : 'Frequency',
-               'theme'       : 'open' }
+               'theme'       : 'open',
+                'hide'       : ['bottom'] }
 
     #### a. without escape terms
     # all escape mutations
