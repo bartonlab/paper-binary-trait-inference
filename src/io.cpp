@@ -5,7 +5,6 @@
 #include "io.h"     // input/output
 
 
-
 /**********  I N P U T  **********/
 
 // Retrieve sequences, counts, and generation times from a file (format in main.cpt and examples/)
@@ -153,6 +152,31 @@ void getTrait(FILE* input, IntVector& po) {
 
 }
 
+void getTraitnew(FILE *input, IntVVector &po) {
+    char buffer[256]; // Buffer for individual tokens, large enough for any token
+    int num;
+    char sep;
+
+    while (true) {
+        IntVector currentLine;
+        while (true) {
+            if (fscanf(input, "%d", &num) != 1) break; // Break if we can't read a number
+            std::vector<int>  currentNumbers;
+            currentNumbers.push_back(num);
+            sep = fgetc(input); // Get the next character to check for a separator or newline
+            while (sep == '/') { // Handle composite numbers
+                if (fscanf(input, "%d", &num) == 1) {
+                    currentNumbers.push_back(num);
+                    sep = fgetc(input); // Get next character to check if more numbers follow
+                }
+            }
+            currentLine.push_back(currentNumbers);
+            if (sep != ' ' && sep != '\t') break; // Break the inner loop if not a space/tab, assuming end of line
+        }
+        if (feof(input)) break; // Break the outer loop if end of file
+        po.push_back(currentLine);
+    }
+}
 
 /**********  O U T P U T  **********/
 

@@ -17,6 +17,7 @@ void getSequences(FILE *input, IntVVector &sequences, Vector &counts, std::vecto
 void expandSequences(int q, IntVector &sequences);
 void getMu(FILE *input, Vector &mu);
 void getTrait(FILE* input, IntVector &po);
+void getTraitnew(FILE* input, IntVVector &po);
 
 // Output
 void printSelectionCoefficients(FILE *output, const std::vector<double> &s);

@@ -1,8 +1,4 @@
 import numpy as np
-try:
-    import itertools.izip as zip
-except ImportError:
-    import itertools
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import random
@@ -62,8 +58,6 @@ def simulate(**pdata):
     ne = len(escape_group)
 
     seq_length = n_ben+n_neu+n_del
-    muMatrix = np.ones([q,q]) * mu
-    for i in range(q): muMatrix[i][i] = 0 # make sure the diagonal equals to 0
 
     ############################################################################
     ############################## FUNCTIONS ###################################
@@ -384,7 +378,7 @@ def run_mpl_binary(**pdata):
     else:
         data         = np.loadtxt("%s/%s/sequences/example-%s.dat"%(SIM_DIR,xpath,xfile))
         escape_group = read_file(xpath,'traitsite/traitsite-%s.dat'%(xfile[0]))
-        trait_dis    = read_file(xpath,'traitdis/traitsite-%s.dat'%(xfile[0]))
+        trait_dis    = read_file(xpath,'traitdis/traitdis-%s.dat'%(xfile[0]))
 
     times      = np.unique(data.T[0]) # get all time point
     ne         = len(escape_group)

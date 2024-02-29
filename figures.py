@@ -404,7 +404,8 @@ def plot_example_mpl(**pdata):
 
     # SAVE FIGURE
     if show_fig:
-        plt.savefig('%s/fig1.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        plt.savefig('%s/fig1-sim.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        print('Figure saved as fig1-sim.pdf')
     else:
         plt.savefig('%s/sim/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
         plt.close()
@@ -586,7 +587,8 @@ def plot_histogram_sim(**pdata):
     ax_erro.text(box_erro['left']+dx, box_erro['top']+dy, 'e'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig2.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.savefig('%s/sim-his.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sim-his.pdf')
 
 def plot_sc_escape(**pdata):
     """
@@ -660,6 +662,7 @@ def plot_sc_escape(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/sc_escape.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sc_escape.pdf')
 
 
 def plot_tc_rec(**pdata):
@@ -732,6 +735,7 @@ def plot_tc_rec(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/tc_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as tc_rec.pdf')
 
 
 def plot_histogram_fraction_HIV(**pdata):
@@ -899,11 +903,11 @@ def plot_histogram_fraction_HIV(**pdata):
     ax_frac.text(box_frac['left']+dx, box_frac['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig3.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure done.')
+    plt.savefig('%s/fig2-HIV.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as fig2-HIV.pdf')
 
 
-def plot_figure_4(**pdata):
+def plot_CH470_3(**pdata):
     """
     epitope escape mutation frequencies, inferred escape coefficients.
     """
@@ -1058,11 +1062,10 @@ def plot_figure_4(**pdata):
     #ax_lend.text(-1.5, 2.5, '3\' half-genome \nfor CH470', ha='left', va='center', **DEF_LABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig4.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure 4 done.')
+    plt.savefig('%s/fig3-CH470-3.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as fig3-CH470-3.pdf')
 
-
-def plot_figure_5(**pdata):
+def plot_CH131_3(**pdata):
     """
     epitope escape mutation frequencies, inferred escape coefficientsd.
     """
@@ -1209,11 +1212,10 @@ def plot_figure_5(**pdata):
     rec = ax_coef[1].add_patch(rec)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig5.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure 5 done.')
+    plt.savefig('%s/fig4-CH131-3_escape.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as fig4-CH131-3_escape.pdf')
 
-
-def plot_figure_6(**pdata):
+def plot_CH470_5(**pdata):
 
     # unpack data
 
@@ -1316,7 +1318,7 @@ def plot_figure_6(**pdata):
     goldh = w/1.8
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_t  = 0.98
+    box_t  = 0.94
     box_b  = 0.09
     box_y  = (w/goldh) * (0.45 - 0.10)
     box_dy = 0.10
@@ -1502,9 +1504,8 @@ def plot_figure_6(**pdata):
     ax_sij.text(box_sij['left']+dx, box_ss['top']+dy, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # SAVE FIGURE
-    plt.savefig('%s/fig6.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure 6 done.')
-
+    plt.savefig('%s/fig5-CH470-5_linkage.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as fig5-CH470-5_linkage.pdf')
 
 def plotReversionFaction(**pdata):
     """
@@ -1610,7 +1611,7 @@ def plotReversionFaction(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('figure reversion done.')
+    print('Figure saved as reversion.pdf')
 
 @dataclass
 class Result:
@@ -1950,6 +1951,7 @@ def plot_single_fraction(**pdata):
     ax_frac.text(traj_legend_x, traj_legend_y[2], traj_legend_t[2], ha='left', va='center', **DEF_LABELPROPS)
 
     plt.savefig('%s/reversion-CH%s.pdf' % (FIG_DIR,ppt[-3:]), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as reversion-CH%s.pdf' % ppt[-3:])
 
 
 def plot_histogram_sim_rec(**pdata):
@@ -2082,6 +2084,7 @@ def plot_histogram_sim_rec(**pdata):
     
     # SAVE FIGURE
     plt.savefig('%s/sim_his_rec.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sim_his_rec.pdf')
 
 def plot_sum_fraction(**pdata):
     """
@@ -2244,6 +2247,7 @@ def plot_sum_fraction(**pdata):
     ax_frac.text(traj_legend_x, traj_legend_y[2], traj_legend_t[2], ha='left', va='center', **DEF_LABELPROPS)
 
     plt.savefig('%s/fraction_sum.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as fraction_sum.pdf')
 
 
 def plot_trait_site_reversion(**pdata):
@@ -2386,7 +2390,7 @@ def plot_trait_site_reversion(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/sc_escape_reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-
+    print('Figure saved as sc_escape_reversion.pdf')
 
 def get_participation_ratio(tag):
 
@@ -2436,99 +2440,96 @@ def get_participation_ratio(tag):
     
     return times, ff, CountAll
 
-def plotParticipationRatio(**pdata):
-    """
+# def plotParticipationRatio(**pdata):
+#     """
 
-    """
+#     """
 
-    # unpack passed data
-    ppts   = pdata['ppts']
+#     # unpack passed data
+#     ppts   = pdata['ppts']
 
-    # get all 
-    ratio_all    = []
-    common_times = []
-    for i in range(len(ppts)):
-        ppt = ppts[i]
-        tag_3 = ppt + '-' + str(3)
-        tag_5 = ppt + '-' + str(5)
+#     # get all 
+#     ratio_all    = []
+#     common_times = []
+#     for i in range(len(ppts)):
+#         ppt = ppts[i]
+#         tag_3 = ppt + '-' + str(3)
+#         tag_5 = ppt + '-' + str(5)
 
-        t_3, f_3, n_3 = get_participation_ratio(tag_3)
-        t_5, f_5, n_5 = get_participation_ratio(tag_5)
+#         t_3, f_3, n_3 = get_participation_ratio(tag_3)
+#         t_5, f_5, n_5 = get_participation_ratio(tag_5)
 
-        common_t  = np.intersect1d(t_3, t_5)
-        ratio_tag = np.zeros(len(common_t))
-        for i in range(len(common_t)):
-            index_3 = list(t_3).index(common_t[i])
-            index_5 = list(t_5).index(common_t[i])
-            ratio_tag[i]  = (f_3[index_3]*n_3[index_3]+f_5[index_5]*n_5[index_5])/(n_3[index_3]+n_5[index_5])
+#         common_t  = np.intersect1d(t_3, t_5)
+#         ratio_tag = np.zeros(len(common_t))
+#         for i in range(len(common_t)):
+#             index_3 = list(t_3).index(common_t[i])
+#             index_5 = list(t_5).index(common_t[i])
+#             ratio_tag[i]  = (f_3[index_3]*n_3[index_3]+f_5[index_5]*n_5[index_5])/(n_3[index_3]+n_5[index_5])
 
-        common_times.append(common_t)
-        ratio_all.append(ratio_tag)
+#         common_times.append(common_t)
+#         ratio_all.append(ratio_tag)
 
-    max_times = [max(common_times[i]) for i in range(len(common_times))]
-    max_time = int(max(max_times))
+#     max_times = [max(common_times[i]) for i in range(len(common_times))]
+#     max_time = int(max(max_times))
 
-    whole_time = np.linspace(0,max_time,max_time+1)
-    interpolation = lambda a,b: sp_interpolate.interp1d(a,b,kind='linear',fill_value=(0,0), bounds_error=False)
+#     whole_time = np.linspace(0,max_time,max_time+1)
+#     interpolation = lambda a,b: sp_interpolate.interp1d(a,b,kind='linear',fill_value=(0,0), bounds_error=False)
 
-    IntRatio  = np.zeros((len(common_times),len(whole_time)))
-    IntNumber    = np.zeros((len(common_times),len(whole_time)))
+#     IntRatio  = np.zeros((len(common_times),len(whole_time)))
+#     IntNumber    = np.zeros((len(common_times),len(whole_time)))
 
-    for i in range(len(common_times)):
-        IntRatio[i]  = interpolation(common_times[i], ratio_all[i])(whole_time)
-        IntNumber[i] = interpolation(common_times[i], np.ones(len(common_times[i])))(whole_time)
+#     for i in range(len(common_times)):
+#         IntRatio[i]  = interpolation(common_times[i], ratio_all[i])(whole_time)
+#         IntNumber[i] = interpolation(common_times[i], np.ones(len(common_times[i])))(whole_time)
 
-    AveRatio = np.zeros(len(whole_time))
-    for t in range(len(whole_time)):
-        ratio_t = np.sum(IntRatio[:,t])
-        number_t   = np.sum(IntNumber[:,t])
-        AveRatio[t] = ratio_t/number_t
+#     AveRatio = np.zeros(len(whole_time))
+#     for t in range(len(whole_time)):
+#         ratio_t = np.sum(IntRatio[:,t])
+#         number_t   = np.sum(IntNumber[:,t])
+#         AveRatio[t] = ratio_t/number_t
 
-    # PLOT FIGURE
-    ## set up figure grid
+#     # PLOT FIGURE
+#     ## set up figure grid
 
-    w     = SINGLE_COLUMN
-    goldh = w / 2.2
-    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+#     w     = SINGLE_COLUMN
+#     goldh = w / 2.2
+#     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_ratio = dict(left=0.20, right=0.92, bottom=0.22, top=0.95)
-    gs_ratio  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_ratio)
-    ax_ratio  = plt.subplot(gs_ratio[0, 0])
+#     box_ratio = dict(left=0.20, right=0.92, bottom=0.22, top=0.95)
+#     gs_ratio  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_ratio)
+#     ax_ratio  = plt.subplot(gs_ratio[0, 0])
 
-    ### plot fraction
-    pprops = { #'xticks':      [ 0,  100, 200, 300,  400, 500, 600, 700],
-               'xticks':      [ 0,  np.log(10),np.log(50),np.log(100), np.log(200),np.log(400),np.log(700)],
-               'xticklabels': [ 0, 10, 50, 100, 200, 400, 700],
-               'ylim'  :      [0., 1.01],
-               'yticks':      [0., 1],
-               'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, 1],
-               'nudgey':      1.1,
-               'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to reversion',
-               'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
-               'axoffset':    0.1,
-               'theme':       'open',
-               'combine'     : True}
+#     ### plot fraction
+#     pprops = { #'xticks':      [ 0,  100, 200, 300,  400, 500, 600, 700],
+#                'xticks':      [ 0,  np.log(10),np.log(50),np.log(100), np.log(200),np.log(400),np.log(700)],
+#                'xticklabels': [ 0, 10, 50, 100, 200, 400, 700],
+#                'ylim'  :      [0., 1.01],
+#                'yticks':      [0., 1],
+#                'yminorticks': [0.25, 0.5, 0.75],
+#                'yticklabels': [0, 1],
+#                'nudgey':      1.1,
+#                'xlabel':      'Time (days)',
+#                'ylabel':      'Participation ratio', # \sum (\frac{x_i s_i}{\Delta f})^2
+#                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
+#                'axoffset':    0.1,
+#                'theme':       'open',
+#                'combine'     : True}
 
-    for i in range(len(common_times)):
-        max_t_i = int(max(common_times[i]))
-        time_i  = np.linspace(0,max_t_i,max_t_i+1)
-        time    = np.log(time_i+1)
-        mp.line(ax=ax_ratio, x=[time], y=[IntRatio[i][:max_t_i+1]], colors=[C_group[0]], **pprops)
+#     for i in range(len(common_times)):
+#         max_t_i = int(max(common_times[i]))
+#         time_i  = np.linspace(0,max_t_i,max_t_i+1)
+#         time    = np.log(time_i+1)
+#         mp.line(ax=ax_ratio, x=[time], y=[IntRatio[i][:max_t_i+1]], colors=[C_group[0]], **pprops)
 
-    pprops['plotprops']['ls'] = '--'
-    mp.line(ax=ax_ratio,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
+#     pprops['plotprops']['ls'] = '--'
+#     mp.line(ax=ax_ratio,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
 
-    pprops['plotprops']['alpha'] = 1
-    pprops['plotprops']['lw'] = SIZELINE*1.8
-    pprops['plotprops']['ls'] = '-'
-    time = np.log(whole_time+1)
-    mp.plot(type='line', ax=ax_ratio, x=[time], y=[AveRatio],colors=[C_NEU], **pprops)
+#     pprops['plotprops']['alpha'] = 1
+#     pprops['plotprops']['lw'] = SIZELINE*1.8
+#     pprops['plotprops']['ls'] = '-'
+#     time = np.log(whole_time+1)
+#     mp.plot(type='line', ax=ax_ratio, x=[time], y=[AveRatio],colors=[C_NEU], **pprops)
 
-    # SAVE FIGURE
-    # plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    # print('figure reversion done.')
 
 
 def plot_site_reversion(**pdata):
@@ -2678,240 +2679,238 @@ def plot_site_reversion(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/sc_reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sc_reversion.pdf')
 
-def plot_site_escape(**pdata):
-    """
-    Histogram of all selection coefficients
-    Use different color to represent escape mutation on trait site and other mutations
-    """
+# def plot_site_escape(**pdata):
+#     """
+#     Histogram of all selection coefficients
+#     Use different color to represent escape mutation on trait site and other mutations
+#     """
 
-    # unpack passed data
-    tags   = pdata['tags']
+#     # unpack passed data
+#     tags   = pdata['tags']
 
-    # get all selection coefficients for escape mutations
-    sc_all_old = [] # mutations
-    sc_esc_old = [] # escape mutations on escape sites
-    sc_all_new = [] # mutations
-    sc_esc_new = [] # escape mutations on escape sites
-    for tag in tags:
+#     # get all selection coefficients for escape mutations
+#     sc_all_old = [] # mutations
+#     sc_esc_old = [] # escape mutations on escape sites
+#     sc_all_new = [] # mutations
+#     sc_esc_new = [] # escape mutations on escape sites
+#     for tag in tags:
 
-        df = pd.read_csv('%s/analysis/%s-analyze.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
-        df_variant   = df[df['nucleotide'] != df['TF']] # all mutation
+#         df = pd.read_csv('%s/analysis/%s-analyze.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+#         df_variant   = df[df['nucleotide'] != df['TF']] # all mutation
 
-        for i in range(len(df_variant)):
-            sc_all_old.append(df_variant.iloc[i].sc_old)
-            sc_all_new.append(df_variant.iloc[i].sc_MPL)
+#         for i in range(len(df_variant)):
+#             sc_all_old.append(df_variant.iloc[i].sc_old)
+#             sc_all_new.append(df_variant.iloc[i].sc_MPL)
 
-        try:   
-            df_epitope = pd.read_csv('%s/group/escape_group-%s.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
-            df_epitope = df_epitope[df_epitope['escape']==True]
-            for i in range(len(df_epitope)):
-                sc_esc_old.append(df_epitope.iloc[i].sc_old)
-                sc_esc_new.append(df_epitope.iloc[i].sc_MPL)
-        except FileNotFoundError:
-            pass
+#         try:   
+#             df_epitope = pd.read_csv('%s/group/escape_group-%s.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+#             df_epitope = df_epitope[df_epitope['escape']==True]
+#             for i in range(len(df_epitope)):
+#                 sc_esc_old.append(df_epitope.iloc[i].sc_old)
+#                 sc_esc_new.append(df_epitope.iloc[i].sc_MPL)
+#         except FileNotFoundError:
+#             pass
 
-    # PLOT FIGURE
-    ## set up figure grid
+#     # PLOT FIGURE
+#     ## set up figure grid
 
-    w     = SINGLE_COLUMN
-    goldh = w / 1.5
-    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+#     w     = SINGLE_COLUMN
+#     goldh = w / 1.5
+#     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
-    box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
-    gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
-    gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
-    ax_old  = plt.subplot(gs_old[0, 0])
-    ax_new  = plt.subplot(gs_new[0, 0])
+#     box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
+#     box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
+#     gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
+#     gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
+#     ax_old  = plt.subplot(gs_old[0, 0])
+#     ax_new  = plt.subplot(gs_new[0, 0])
 
-    dx = -0.10
-    dy =  0.02
+#     dx = -0.10
+#     dy =  0.02
 
-    ### plot histogram of selection coefficients
-    histprops = dict(lw=SIZELINE/2, width=0.0015, align='center', orientation='vertical',alpha=0.5, edgecolor='none')
-    lineprops = dict(lw=SIZELINE*3, linestyle='-', alpha=1)
+#     ### plot histogram of selection coefficients
+#     histprops = dict(lw=SIZELINE/2, width=0.0015, align='center', orientation='vertical',alpha=0.5, edgecolor='none')
+#     lineprops = dict(lw=SIZELINE*3, linestyle='-', alpha=1)
 
-    pprops = { 'xlim'        : [ -0.06,  0.12],
-               'xticks'      : [ -0.06,     0,  0.06, 0.12],
-               'xticklabels' : [ ],
-               'ylim'        : [0., 1.6],
-               'yticks'      : [0., np.log10(1+1), np.log10(5+1), np.log10(10+1), np.log10(20+1), np.log10(40+1)],
-               'yticklabels' : [0.,          0.01,          0.05,           0.10,           0.20,            0.4],
-               #'ylim'        : [0., 0.40],
-               #'yticks'      : [0., 0.20, 0.40],
-               'ylabel'      : 'Frequency',
-               'theme'       : 'boxed' }
+#     pprops = { 'xlim'        : [ -0.06,  0.12],
+#                'xticks'      : [ -0.06,     0,  0.06, 0.12],
+#                'xticklabels' : [ ],
+#                'ylim'        : [0., 1.6],
+#                'yticks'      : [0., np.log10(1+1), np.log10(5+1), np.log10(10+1), np.log10(20+1), np.log10(40+1)],
+#                'yticklabels' : [0.,          0.01,          0.05,           0.10,           0.20,            0.4],
+#                #'ylim'        : [0., 0.40],
+#                #'yticks'      : [0., 0.20, 0.40],
+#                'ylabel'      : 'Frequency',
+#                'theme'       : 'boxed' }
     
-    bins   = np.arange(-0.05, 0.10, 0.002)
+#     bins   = np.arange(-0.05, 0.10, 0.002)
 
-    #### a. without escape terms
-    # all escape mutations
-    all_old, bin_edges = np.histogram(sc_all_old, bins=bins)
-    all_old            = all_old/len(sc_all_old)
-    bar_x = (bin_edges[:-1] + bin_edges[1:]) / 2
+#     #### a. without escape terms
+#     # all escape mutations
+#     all_old, bin_edges = np.histogram(sc_all_old, bins=bins)
+#     all_old            = all_old/len(sc_all_old)
+#     bar_x = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-    all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
-    all_new            = all_new/len(sc_all_new)
+#     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
+#     all_new            = all_new/len(sc_all_new)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(all_old*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(all_new*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
+#     mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(all_old*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
+#     mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(all_new*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
 
-    # escape mutations that are also reversions
-    rev_old, bin_edges = np.histogram(sc_esc_old, bins=bins)
-    rev_old            = rev_old/len(sc_all_old)
+#     # escape mutations that are also reversions
+#     rev_old, bin_edges = np.histogram(sc_esc_old, bins=bins)
+#     rev_old            = rev_old/len(sc_all_old)
     
-    rev_new, bin_edges = np.histogram(sc_esc_new, bins=bins)
-    rev_new            = rev_new/len(sc_all_new)
+#     rev_new, bin_edges = np.histogram(sc_esc_new, bins=bins)
+#     rev_new            = rev_new/len(sc_all_new)
 
-    histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(rev_old*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(rev_new*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
+#     histprops['alpha'] = 1
+#     mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(rev_old*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
+#     mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(rev_new*100+1)], colors=[C_group[2]], plotprops=histprops, **pprops)
 
-    # legend
-    legend_x  =  0.04
-    title_y   =  np.log10(21) # 0.25
-    legend_y  = [np.log10(12),np.log10(7)] #[0.15,0.20]
-    legend_t  = ['Escape mutations', 'Other mutations']
+#     # legend
+#     legend_x  =  0.04
+#     title_y   =  np.log10(21) # 0.25
+#     legend_y  = [np.log10(12),np.log10(7)] #[0.15,0.20]
+#     legend_t  = ['Escape mutations', 'Other mutations']
 
-    x1 = legend_x-0.01
-    x2 = legend_x-0.004
-    y1 = legend_y[0] + 0.025 # 0.0025
-    y2 = legend_y[1] + 0.025 # 0.0025
+#     x1 = legend_x-0.01
+#     x2 = legend_x-0.004
+#     y1 = legend_y[0] + 0.025 # 0.0025
+#     y2 = legend_y[1] + 0.025 # 0.0025
 
-    # escape mutations that are also reversions
-    ax_old.text(x1, title_y, 'Without escape trait', **DEF_LABELPROPS)
+#     # escape mutations that are also reversions
+#     ax_old.text(x1, title_y, 'Without escape trait', **DEF_LABELPROPS)
     
-    mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
-    lineprops['alpha'] = 0.5
-    mp.plot(type='line',ax=ax_old, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
+#     mp.line(            ax=ax_old, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
+#     lineprops['alpha'] = 0.5
+#     mp.plot(type='line',ax=ax_old, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
 
-    ax_old.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_old.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_old.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_old.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
-    # other escape mutations
-    pprops['xticks']      = [ -0.06,     0,  0.06, 0.12]
-    pprops['xticklabels'] = [    -6,     0,     6,   12]
-    pprops['xlabel']      = 'Inferred selection coefficient, ' + r'$\hat{s}$ ' +'(%)'
+#     # other escape mutations
+#     pprops['xticks']      = [ -0.06,     0,  0.06, 0.12]
+#     pprops['xticklabels'] = [    -6,     0,     6,   12]
+#     pprops['xlabel']      = 'Inferred selection coefficient, ' + r'$\hat{s}$ ' +'(%)'
 
-    ax_new.text(x1, title_y, 'With escape trait', **DEF_LABELPROPS)
+#     ax_new.text(x1, title_y, 'With escape trait', **DEF_LABELPROPS)
     
-    lineprops['alpha'] = 1
-    mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
-    lineprops['alpha'] = 0.5
-    mp.plot(type='line',ax=ax_new, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
+#     lineprops['alpha'] = 1
+#     mp.line(            ax=ax_new, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[2]], plotprops=lineprops, **pprops)
+#     lineprops['alpha'] = 0.5
+#     mp.plot(type='line',ax=ax_new, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[0]], plotprops=lineprops, **pprops)
     
-    ax_new.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_new.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_new.text(legend_x, legend_y[0], legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_new.text(legend_x, legend_y[1], legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
-    # label
-    ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
-    ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
-
-    # SAVE FIGURE
-    # plt.savefig('%s/sc_escape_new.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+#     # label
+#     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+#     ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
 
-def plot_reversion_scatter(**pdata):
-    """
-    Scatter of selection coefficients for trait sises
-    Use different color to represent reversion mutation and non-reversion mutation
-    """
+# def plot_reversion_scatter(**pdata):
+#     """
+#     Scatter of selection coefficients for trait sises
+#     Use different color to represent reversion mutation and non-reversion mutation
+#     """
 
-    # unpack passed data
-    tags   = pdata['tags']
+#     # unpack passed data
+#     tags   = pdata['tags']
 
-    # get all selection coefficients for escape mutations
-    sc_all_old = [] # escape mutations
-    sc_rev_old = [] # escape mutations that are also reversions
-    sc_all_new = [] # escape mutations
-    sc_rev_new = [] # escape mutations that are also reversions
-    for tag in tags:
-        df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        df_epitope = df_epitope[df_epitope['escape'] == True]
-        df_reversion = df_epitope[(df_epitope['nucleotide'] == df_epitope['consensus'])]
+#     # get all selection coefficients for escape mutations
+#     sc_all_old = [] # escape mutations
+#     sc_rev_old = [] # escape mutations that are also reversions
+#     sc_all_new = [] # escape mutations
+#     sc_rev_new = [] # escape mutations that are also reversions
+#     for tag in tags:
+#         df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+#         df_epitope = df_epitope[df_epitope['escape'] == True]
+#         df_reversion = df_epitope[(df_epitope['nucleotide'] == df_epitope['consensus'])]
 
-        for i in range(len(df_epitope)):
-            if df_epitope.iloc[i].nucleotide != df_epitope.iloc[i].consensus:
-                sc_all_old.append(df_epitope.iloc[i].sc_old)
-                sc_all_new.append(df_epitope.iloc[i].sc_MPL)
+#         for i in range(len(df_epitope)):
+#             if df_epitope.iloc[i].nucleotide != df_epitope.iloc[i].consensus:
+#                 sc_all_old.append(df_epitope.iloc[i].sc_old)
+#                 sc_all_new.append(df_epitope.iloc[i].sc_MPL)
 
-        for i in range(len(df_reversion)):
-            sc_rev_old.append(df_reversion.iloc[i].sc_old)
-            sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
+#         for i in range(len(df_reversion)):
+#             sc_rev_old.append(df_reversion.iloc[i].sc_old)
+#             sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
 
-    # PLOT FIGURE
-    ## set up figure grid
+#     # PLOT FIGURE
+#     ## set up figure grid
 
-    w     = SINGLE_COLUMN
-    goldh = w / 1.5
-    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+#     w     = SINGLE_COLUMN
+#     goldh = w / 1.5
+#     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
-    box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
-    gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
-    gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
-    ax_old  = plt.subplot(gs_old[0, 0])
-    ax_new  = plt.subplot(gs_new[0, 0])
+#     box_old = dict(left=0.15, right=0.92, bottom=0.61, top=0.95)
+#     box_new = dict(left=0.15, right=0.92, bottom=0.14, top=0.48)
+#     gs_old  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_old)
+#     gs_new  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_new)
+#     ax_old  = plt.subplot(gs_old[0, 0])
+#     ax_new  = plt.subplot(gs_new[0, 0])
 
-    dx = -0.10
-    dy =  0.02
+#     dx = -0.10
+#     dy =  0.02
 
-    ### plot histogram of selection coefficients
-    sprops = dict(lw=AXWIDTH, s=2., marker='o', alpha=0.5)
-    lineprops = dict(lw=SIZELINE, linestyle='--', alpha=0.5)
+#     ### plot histogram of selection coefficients
+#     sprops = dict(lw=AXWIDTH, s=2., marker='o', alpha=0.5)
+#     lineprops = dict(lw=SIZELINE, linestyle='--', alpha=0.5)
 
-    pprops = { 'xlim'        : [ -0.3,  0.6],
-               'xticks'      : [ ],
-               'ylim'        : [ -0.05,  0.10],
-               'yticks'      : [ -0.05,     0,  0.05, 0.1],
-            #    'ylabel'      : 'Frequency',
-               'theme'       : 'open',
-                'hide'       : ['bottom'] }
+#     pprops = { 'xlim'        : [ -0.3,  0.6],
+#                'xticks'      : [ ],
+#                'ylim'        : [ -0.05,  0.10],
+#                'yticks'      : [ -0.05,     0,  0.05, 0.1],
+#             #    'ylabel'      : 'Frequency',
+#                'theme'       : 'open',
+#                 'hide'       : ['bottom'] }
 
-    #### a. without escape terms
-    # all escape mutations
-    x_all = np.random.normal(0, 0.06,len(sc_all_old))
-    mp.scatter(ax=ax_old, x=[x_all], y=[sc_all_old], colors=[C_group[0]],plotprops=sprops, **pprops)
-    mp.scatter(ax=ax_new, x=[x_all], y=[sc_all_new], colors=[C_group[0]],plotprops=sprops, **pprops)
+#     #### a. without escape terms
+#     # all escape mutations
+#     x_all = np.random.normal(0, 0.06,len(sc_all_old))
+#     mp.scatter(ax=ax_old, x=[x_all], y=[sc_all_old], colors=[C_group[0]],plotprops=sprops, **pprops)
+#     mp.scatter(ax=ax_new, x=[x_all], y=[sc_all_new], colors=[C_group[0]],plotprops=sprops, **pprops)
 
-    # escape mutations that are also reversions
-    sprops['alpha'] = 1
-    x_rev = np.random.normal(0, 0.03,len(sc_rev_old))
-    mp.scatter(ax=ax_old, x=[x_rev], y=[sc_rev_old], colors=[C_group[1]],plotprops=sprops, **pprops)
-    mp.scatter(ax=ax_new, x=[x_rev], y=[sc_rev_new], colors=[C_group[1]],plotprops=sprops, **pprops)
+#     # escape mutations that are also reversions
+#     sprops['alpha'] = 1
+#     x_rev = np.random.normal(0, 0.03,len(sc_rev_old))
+#     mp.scatter(ax=ax_old, x=[x_rev], y=[sc_rev_old], colors=[C_group[1]],plotprops=sprops, **pprops)
+#     mp.scatter(ax=ax_new, x=[x_rev], y=[sc_rev_new], colors=[C_group[1]],plotprops=sprops, **pprops)
 
-    mp.line(ax=ax_old, x=[[-0.20, 0.20]], y=[[0, 0]], colors=[BKCOLOR], plotprops=lineprops, **pprops)
-    mp.line(ax=ax_new, x=[[-0.20, 0.20]], y=[[0, 0]], colors=[BKCOLOR], plotprops=lineprops, **pprops)
+#     mp.line(ax=ax_old, x=[[-0.20, 0.20]], y=[[0, 0]], colors=[BKCOLOR], plotprops=lineprops, **pprops)
+#     mp.line(ax=ax_new, x=[[-0.20, 0.20]], y=[[0, 0]], colors=[BKCOLOR], plotprops=lineprops, **pprops)
 
-    # escape mutations that are also reversions
-    # legend
-    traj_legend_x  =  0.30
-    traj_dot_x     = traj_legend_x-0.03
-    traj_legend_y1 = 0.04
-    traj_legend_y2 = 0.06
-    traj_legend_t  = ['Reversion mutation', 'Not reversion mutation']
+#     # escape mutations that are also reversions
+#     # legend
+#     traj_legend_x  =  0.30
+#     traj_dot_x     = traj_legend_x-0.03
+#     traj_legend_y1 = 0.04
+#     traj_legend_y2 = 0.06
+#     traj_legend_t  = ['Reversion mutation', 'Not reversion mutation']
 
-    # escape mutations that are also reversions
-    mp.scatter(ax=ax_old, x=[[traj_dot_x]], y=[[traj_legend_y1]], colors=[C_group[1]], plotprops=sprops, **pprops)
-    mp.scatter(ax=ax_new, x=[[traj_dot_x]], y=[[traj_legend_y1]], colors=[C_group[1]], plotprops=sprops, **pprops)
+#     # escape mutations that are also reversions
+#     mp.scatter(ax=ax_old, x=[[traj_dot_x]], y=[[traj_legend_y1]], colors=[C_group[1]], plotprops=sprops, **pprops)
+#     mp.scatter(ax=ax_new, x=[[traj_dot_x]], y=[[traj_legend_y1]], colors=[C_group[1]], plotprops=sprops, **pprops)
 
-    sprops['alpha'] = 0.5
-    mp.plot(type='scatter',ax=ax_old, x=[[traj_dot_x]], y=[[traj_legend_y2]], colors=[C_group[0]], plotprops=sprops, **pprops)
-    mp.plot(type='scatter',ax=ax_new, x=[[traj_dot_x]], y=[[traj_legend_y2]], colors=[C_group[0]], plotprops=sprops, **pprops)
+#     sprops['alpha'] = 0.5
+#     mp.plot(type='scatter',ax=ax_old, x=[[traj_dot_x]], y=[[traj_legend_y2]], colors=[C_group[0]], plotprops=sprops, **pprops)
+#     mp.plot(type='scatter',ax=ax_new, x=[[traj_dot_x]], y=[[traj_legend_y2]], colors=[C_group[0]], plotprops=sprops, **pprops)
 
-    ax_old.text(traj_legend_x, 0.08, 'Without escape trait', **DEF_LABELPROPS)
-    ax_new.text(traj_legend_x, 0.08, 'With escape trait', **DEF_LABELPROPS)
+#     ax_old.text(traj_legend_x, 0.08, 'Without escape trait', **DEF_LABELPROPS)
+#     ax_new.text(traj_legend_x, 0.08, 'With escape trait', **DEF_LABELPROPS)
 
-    ax_old.text(traj_legend_x, traj_legend_y1, traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_old.text(traj_legend_x, traj_legend_y2, traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_old.text(traj_legend_x, traj_legend_y1, traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_old.text(traj_legend_x, traj_legend_y2, traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
     
-    ax_new.text(traj_legend_x, traj_legend_y1, traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
-    ax_new.text(traj_legend_x, traj_legend_y2, traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_new.text(traj_legend_x, traj_legend_y1, traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+#     ax_new.text(traj_legend_x, traj_legend_y2, traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
 
-    # label
-    ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
-    ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+#     # label
+#     ax_old.text(box_old['left']+dx, box_old['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+#     ax_new.text(box_new['left']+dx, box_new['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
-    # SAVE FIGURE
-    # plt.savefig('%s/sc_escape_new.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+#     # SAVE FIGURE
+#     # plt.savefig('%s/sc_escape_new.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)

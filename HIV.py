@@ -101,26 +101,30 @@ def codon2aa(c):
     else:                                  return 'X'
 
 def read_file(name):
-    poly = []
+    result = []  # initialize the result list
     p = open(HIV_DIR+'/input/'+name,'r')
-    maxlen = 0
-    maxnum = 0
     for line in p:
-        temp = re.findall(r'-?\d+\.?\d*e?-?\d*?', line)
-        data = [float(item) for item in temp]
-        poly.append(data)
-        #print(data)
-        if len(data) > maxlen:
-            maxlen = len(data)
-        maxnum += 1
-    arr = np.zeros((maxnum, maxlen))*np.nan
-    for cnt in np.arange(maxnum):
-        arr[cnt, 0:len(poly[cnt])] = np.array(poly[cnt])
+        # split the line into items and convert them to integers
+        line_data = [int(item) for item in line.split()]
+        result.append(line_data)
     p.close()
-    for i in range(len(poly)):
-        for j in range(len(poly[i])):
-            poly[i][j] = int(poly[i][j])
-    return poly
+    return result
+
+def read_file_s(name):
+    result = [] # initialize the result list
+    p = open(HIV_DIR+'/input/'+name,'r')
+    for line in p:
+        line_data = []  # store the data for each line
+        for item in line.split():  # split the line into items
+            # if the item contains a '/', split it into two integers and add them to the list
+            if '/' in item:  
+                line_data.append(list(map(int, item.split('/'))))
+            # if the item does not contain a '/', add it to the list
+            else:  
+                line_data.append([int(item)])
+        result.append(line_data)
+    p.close()
+    return result
 
 # def get_unique_sequence(tag,i,j):
 #     seq = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
@@ -264,7 +268,7 @@ def find_trait_site(tag,min_n):
                     escape_values[i] = 'True'
 
     """modify the csv file and save it"""
-    columns_to_remove = ['exposed', 'edge_gap','flanking']
+    columns_to_remove = ['exposed', 'edge_gap','flanking','glycan']
     df_poly = df_poly.drop(columns=columns_to_remove)
 
     df_poly.insert(4, 'escape', escape_values)
@@ -370,6 +374,33 @@ def analyze_result(tag,verbose=True):
 
         return xp
 
+    def get_xp_s(seq,traitsite,traitallele):
+        times = []
+
+        for i in range(len(seq)):
+            times.append(seq[i][0])
+        uniq_t = np.unique(times)
+        xp    = np.zeros([len(traitsite),len(uniq_t)])
+
+        for t in range(len(uniq_t)):
+            tid = times==uniq_t[t]
+            counts = np.sum(tid)
+            seq_t = seq[tid][:,2:]
+            for i in range(len(traitsite)):
+                num = 0
+                for n in range(len(seq_t)):
+                    
+                    nonsyn = True
+                    for j in range(len(traitsite[i])):
+                        if seq_t[n][int(traitsite[i][j])] not in traitallele[i][j]:
+                            nonsyn = False
+                    if nonsyn == False:
+                        num += 1
+                
+                xp[i,t] = num/counts
+
+        return xp
+
     seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
     L       = len(seq[0])-2    #the number of polymorphic sites
 
@@ -438,8 +469,12 @@ def analyze_result(tag,verbose=True):
         index_cols = ['polymorphic_index', 'alignment']
         cols = [i for i in list(df) if i not in index_cols]
 
-        polyseq  = read_file('traitseq/traitseq-'+tag+'.dat')
-        xp = get_xp(seq,traitsite,polyseq)
+        if tag != '700010077-3' and tag != '705010162-3':
+            polyseq  = read_file('traitseq/traitseq-'+tag+'.dat')
+            xp = get_xp(seq,traitsite,polyseq)
+        else:
+            polyseq  = read_file_s('traitseq/traitallele-'+tag+'.dat')
+            xp = get_xp_s(seq,traitsite,polyseq)
 
         if verbose:
             g = open('%s/group/escape_group-%s.csv'%(HIV_DIR,tag),'w')
@@ -453,7 +488,7 @@ def analyze_result(tag,verbose=True):
 
         for i in range(len(traitsite)):
             for j in range(len(traitsite[i])):
-                df_poly = df[(df.polymorphic_index == traitsite[i][j]) & (df.nucleotide != df.TF)]
+                df_poly = df[(df.polymorphic_index == traitsite[i][j]) & (df.nucleotide != df.TF) & (df.escape == True)]
                 for n in range(len(df_poly)):
                     g.write('%d' %traitsite[i][j])
                     g.write(',%s' % (','.join([str(df_poly.iloc[n][c]) for c in cols])))
@@ -482,11 +517,17 @@ def modify_seq(tag):
         trait_site = int(variant.split('_')[0])
         mut_alle  = variant.split('_')[-1]
         mut_index = NUC.index(mut_alle)
-        g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-        g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
-        g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
-        g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
-        
+        if tag != '700010077-3' and tag != '705010162-3':
+            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
+            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+        else:
+            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
+            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+
         f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
         for j in range(len(seq)):
             seq_modi  = seq[j]
@@ -501,10 +542,17 @@ def modify_seq(tag):
 
     for n in range(len(trait_sites)):
         variant   = 'epi'+str(int(n))
-        g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-        g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
-        g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
-        g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+        
+        if tag != '700010077-3' and tag != '705010162-3':
+            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
+            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+        else:
+            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
+            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
 
         f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
         for j in range(len(seq)):
