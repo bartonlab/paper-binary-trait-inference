@@ -203,10 +203,10 @@ def plot_example_mpl(**pdata):
     goldh = w/2.5
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_tra1 = dict(left=0.10, right=0.45, bottom=0.55, top=0.95)
-    box_tra2 = dict(left=0.55, right=0.90, bottom=0.55, top=0.95)
-    box_coe1 = dict(left=0.10, right=0.45, bottom=0.10, top=0.42)
-    box_coe2 = dict(left=0.55, right=0.90, bottom=0.10, top=0.42)
+    box_tra1 = dict(left=0.10, right=0.48, bottom=0.55, top=0.98)
+    box_tra2 = dict(left=0.58, right=0.96, bottom=0.55, top=0.98)
+    box_coe1 = dict(left=0.10, right=0.48, bottom=0.05, top=0.42)
+    box_coe2 = dict(left=0.58, right=0.96, bottom=0.05, top=0.42)
 
     gs_tra1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra1)
     gs_tra2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra2)
@@ -850,10 +850,10 @@ def plot_histogram_fraction_HIV(**pdata):
                'ylim'  :      [0., 1.01],
                'yticks':      [0., 1],
                'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, '$\geq 1$'],
+               'yticklabels': [0, 1],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to escape trait',
+               'ylabel':      'Fitness gain fraction \ndue to escape',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
                'theme':       'open',
@@ -1008,7 +1008,7 @@ def plot_figure_4(**pdata):
     bar_x  = [i+0.5 for i in range(len(var_tag))]
     var_epi = []
     for i in range(len(var_tag)):
-        var_epi.append('r\'$'+var_tag[i]+'$\'')
+        var_epi.append(var_tag[i])
     pprops = { 'colors':      [var_color],
                'xlim':        [0, len(var_tag)],
                'xticks'  :    bar_x,
@@ -1016,7 +1016,7 @@ def plot_figure_4(**pdata):
                'yticks':      [    0, 0.08, 0.16],
                'yminorticks': [ 0.04, 0.12],
                'yticklabels': [    0,    8,    16],
-               'xticklabels': [eval(k) for k in var_epi],
+               'xticklabels': [k for k in var_epi],
                'ylabel':      'Inferred escape\ncoefficient, '+r'$\hat{s}$'+' (%)',
                'combine'     : True,
                'plotprops'   : hist_props,
@@ -1176,7 +1176,7 @@ def plot_figure_5(**pdata):
     ax_coef[0].text(box_coef['left']+dx, box_coef['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     bar_x  = [i+0.5 for i in range(len(var_tag)+1)]
-    var_tag.append(r'$EV11$')
+    var_tag.append('EV11')
     var_snew.append(var_tc[0])
     pprops = { 'colors':      [var_c],
                'xlim':        [0, len(var_tag)+1],
@@ -1312,12 +1312,17 @@ def plot_figure_6(**pdata):
 
     ## set up figure grid
 
-    w       = DOUBLE_COLUMN
-    goldh   = w/1.8
-    fig     = plt.figure(figsize=(w, goldh),dpi=1000)
+    w     = DOUBLE_COLUMN
+    goldh = w/1.8
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_ss   = dict(left=0.10, right=0.45, bottom=0.38, top=0.92)
-    box_traj = dict(left=0.10, right=0.45, bottom=0.09, top=0.26)
+    box_t  = 0.98
+    box_b  = 0.09
+    box_y  = (w/goldh) * (0.45 - 0.10)
+    box_dy = 0.10
+
+    box_ss   = dict(left=0.10, right=0.45, bottom=box_t-box_y, top=box_t)
+    box_traj = dict(left=0.10, right=0.45, bottom=box_b, top=box_t-box_y-box_dy)
     box_sij  = dict(left=0.53, right=0.95, bottom=0.12, top=0.75)
 
     gs_ss   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_ss)
@@ -1361,9 +1366,9 @@ def plot_figure_6(**pdata):
         for j in range(len(epi_snew[i])):
             mp.plot(type='scatter', ax=ax_ss, x=[[epi_snew[i][j]]], y=[[epi_sold[i][j]]], colors=[var_c[i]],plotprops=scatterprops, **pprops)
 
-    traj_legend_x  = 0.01
+    traj_legend_x  = 0.014
     traj_legend_dy = -0.003
-    y0             = -0.002
+    y0             = -0.0075
     dx0            = 0.002
     traj_legend_y  = [y0, y0 + traj_legend_dy ,y0 + traj_legend_dy*2]
     scatterprops['s'] = SMALLSIZEDOT*0.8
@@ -1407,8 +1412,8 @@ def plot_figure_6(**pdata):
         mp.plot(type='line', ax=ax_traj, x=xdat, y=ydat, colors=[traj_c[j]], **pprops)
 
     traj_legend_x  =  350
-    traj_legend_dy = -0.2
-    traj_legend_y  = [0.5, 0.5 + traj_legend_dy,0.5 + 2*traj_legend_dy]
+    traj_legend_dy = -0.17
+    traj_legend_y  = [0.45, 0.45 + traj_legend_dy, 0.45 + 2*traj_legend_dy]
     traj_legend_t  = ['Other variants','974A', '3951C']
     for k in range(len(traj_legend_y)):
         yy = traj_legend_y[k]
@@ -1579,10 +1584,10 @@ def plotReversionFaction(**pdata):
                'ylim'  :      [0., 1.01],
                'yticks':      [0., 1],
                'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, '$\geq 1$'],
+               'yticklabels': [0, 1],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to reversion',
+               'ylabel':      'Fitness gain fraction \ndue to reversions',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
                'theme':       'open',
@@ -1894,10 +1899,10 @@ def plot_single_fraction(**pdata):
                'ylim'  :      [0., 1.01],
                'yticks':      [0., 1],
                'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, '$\geq 1$'],
+               'yticklabels': [0, 1],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to escape (CH-%s)'%ppt[-3:],
+               'ylabel':      'Fitness gain fraction', # \ndue to escape (CH-%s)'%ppt[-3:],
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
                'theme':       'open',
@@ -1911,10 +1916,10 @@ def plot_single_fraction(**pdata):
     # due to reversion
     mp.line(ax=ax_frac, x=[time], y=[IntFractions[1]], colors=[C_group[1]], **pprops)
 
-    # y=0 and y=1
-    pprops['plotprops']['ls'] = '--'
-    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
-    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[1,1]],colors=[C_NEU], **pprops)
+    # # y=0 and y=1
+    # pprops['plotprops']['ls'] = '--'
+    # mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
+    # mp.line(ax=ax_frac,x=[[0,6.5]], y=[[1,1]],colors=[C_NEU], **pprops)
 
     # sum of due to escape and reversion
     pprops['plotprops']['alpha'] = 1
@@ -2183,10 +2188,10 @@ def plot_sum_fraction(**pdata):
                'ylim'  :      [0., 1.2],
                'yticks':      [0., 1],
                'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, '$\geq 1$'],
-               'nudgey':      1.1,
+               'yticklabels': [0, 1],
+               'nudgey':      1.0,
                'xlabel':      'Time (days)',
-               'ylabel':      'Fitness gain fraction \ndue to escape trait',
+               'ylabel':      'Fitness gain fraction', # \ndue to escape trait',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.3},
                'axoffset':    0.1,
                'theme':       'open',
@@ -2201,10 +2206,10 @@ def plot_sum_fraction(**pdata):
         # mp.line(ax=ax_frac, x=[time], y=[IntFractions_rev[i][:max_t_i+1]], colors=[C_group[1]], **pprops)
         mp.line(ax=ax_frac, x=[time], y=[IntFractions_sum[i][:max_t_i+1]], colors=[C_group[2]], **pprops)
 
-    # 0
-    pprops['plotprops']['ls'] = '--'
-    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
-    mp.line(ax=ax_frac,x=[[0,6.5]], y=[[1,1]],colors=[C_NEU], **pprops)
+    # # 0
+    # pprops['plotprops']['ls'] = '--'
+    # mp.line(ax=ax_frac,x=[[0,6.5]], y=[[0,0]],colors=[C_NEU], **pprops)
+    # mp.line(ax=ax_frac,x=[[0,6.5]], y=[[1,1]],colors=[C_NEU], **pprops)
 
     # average curve
     pprops['plotprops']['alpha'] = 1
@@ -2216,11 +2221,11 @@ def plot_sum_fraction(**pdata):
     mp.plot(type='line', ax=ax_frac, x=[time], y=[AveFraction_sum],colors=[C_group[2]], **pprops)
 
     # legend
-    traj_legend_x  =  np.log(2.2)
-    traj_legend_y  = [0.85,0.70,0.55]
+    traj_legend_x  = np.log(1.8)
+    traj_legend_y  = [0.90, 0.80, 0.70]
     traj_legend_t  = ['Escape','Reversion','Sum']
 
-    x1 = traj_legend_x-0.6
+    x1 = traj_legend_x-0.4
     x2 = traj_legend_x-0.1
     y1 = traj_legend_y[0] + 0.015
     y2 = traj_legend_y[1] + 0.015
@@ -2239,6 +2244,7 @@ def plot_sum_fraction(**pdata):
     ax_frac.text(traj_legend_x, traj_legend_y[2], traj_legend_t[2], ha='left', va='center', **DEF_LABELPROPS)
 
     plt.savefig('%s/fraction_sum.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+
 
 def plot_trait_site_reversion(**pdata):
     """
@@ -2299,45 +2305,50 @@ def plot_trait_site_reversion(**pdata):
     histprops = dict(lw=SIZELINE/2, width=0.004, align='center', orientation='vertical',alpha=0.5, edgecolor='none')
     lineprops = dict(lw=SIZELINE*6, linestyle='-', alpha=1)
 
-    pprops = { 'xlim'        : [ -0.05,  0.10],
-               'xticks'      : [ -0.05,     0,  0.05, 0.1],
-               'xticklabels' : [ ],
-               'ylim'        : [0, 1.7], #[0., 0.50],
-               'yticks'      : [0, np.log10(11), np.log10(21),np.log10(51)], #[0., 0.25, 0.50],
-               'yticklabels' : [0,          0.1,          0.2,         0.5],#[0,25, 50],
-               'ylabel'      : 'Frequency',
-               'theme'       : 'boxed' }
+    pprops = { 'xlim'       : [ -0.05,  0.10],
+               'xticks'     : [ -0.05,     0,  0.05, 0.1],
+               'xminorticks': [ -0.025, 0.025, 0.075],
+               'xticklabels': [ ],
+               'ylim'       : [0, 3.5], #[0., 0.50],
+               'yticks'     : [1+np.log10(1), 1+np.log10(10), 1+np.log10(100)], #, np.log10(50)], #[0., 0.25, 0.50],
+               'yticklabels': [            1,             10,             100], #,         50], #[0,25, 50],
+               'ylabel'     : 'Counts',
+               'theme'      : 'boxed' }
     
-    bins   = np.arange(-0.05, 0.10, 0.005)
+    bins = np.arange(-0.05, 0.10, 0.005)
 
     #### a. without escape terms
     # all escape mutations
     all_old, bin_edges = np.histogram(sc_all_old, bins=bins)
-    all_old            = all_old/len(sc_all_old)
+    all_old            = [1+np.log10(val) if val>0 else 0 for val in all_old]
+    # all_old            = all_old/len(sc_all_old)
     bar_x = (bin_edges[:-1] + bin_edges[1:]) / 2
 
     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
-    all_new            = all_new/len(sc_all_new)
+    all_new            = [1+np.log10(val) if val>0 else 0 for val in all_new]
+    # all_new            = all_new/len(sc_all_new)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(all_old*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(all_new*100+1)], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
 
     # escape mutations that are also reversions
     rev_old, bin_edges = np.histogram(sc_rev_old, bins=bins)
-    rev_old            = rev_old/len(sc_all_old)
+    rev_old            = [1+np.log10(val) if val>0 else 0 for val in rev_old]
+    # rev_old            = rev_old/len(sc_all_old)
     
     rev_new, bin_edges = np.histogram(sc_rev_new, bins=bins)
-    rev_new            = rev_new/len(sc_all_new)
+    rev_new            = [1+np.log10(val) if val>0 else 0 for val in rev_new]
+    # rev_new            = rev_new/len(sc_all_new)
 
     histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[np.log10(rev_old*100+1)], colors=[C_group[1]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[np.log10(rev_new*100+1)], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
 
     # legend
-    legend_x  =  0.045
-    title_y   =  np.log10(25) # 0.40
-    legend_y  = [np.log10(9), np.log10(15)]#[0.25,0.32]
-    legend_t  = ['Reversion mutation', 'Not reversion mutation']
+    legend_x  =  0.065
+    title_y   =  1+np.log10(100) # 0.40
+    legend_y  = [1+np.log10(100/2.2), 1+np.log10(100/(2.2**2))]#[0.25,0.32]
+    legend_t  = ['Reversion', 'Not reversion']
 
     x1 = legend_x-0.01
     x2 = legend_x-0.004
@@ -2375,6 +2386,7 @@ def plot_trait_site_reversion(**pdata):
 
     # SAVE FIGURE
     plt.savefig('%s/sc_escape_reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+
 
 def get_participation_ratio(tag):
 
@@ -2490,7 +2502,7 @@ def plotParticipationRatio(**pdata):
                'ylim'  :      [0., 1.01],
                'yticks':      [0., 1],
                'yminorticks': [0.25, 0.5, 0.75],
-               'yticklabels': [0, '$\geq 1$'],
+               'yticklabels': [0, 1],
                'nudgey':      1.1,
                'xlabel':      'Time (days)',
                'ylabel':      'Fitness gain fraction \ndue to reversion',
@@ -2517,6 +2529,7 @@ def plotParticipationRatio(**pdata):
     # SAVE FIGURE
     # plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     # print('figure reversion done.')
+
 
 def plot_site_reversion(**pdata):
     """
@@ -2578,51 +2591,56 @@ def plot_site_reversion(**pdata):
     histprops = dict(lw=SIZELINE/2, width=0.0015, align='center', orientation='vertical',alpha=0.5, edgecolor='none')
     lineprops = dict(lw=SIZELINE*3, linestyle='-', alpha=1)
 
-    pprops = { 'xlim'        : [ -0.06,  0.12],
-               'xticks'      : [ -0.06,     0,  0.06, 0.12],
-               'xticklabels' : [ ],
-               'ylim'        : [0., 1.6],
-               'yticks'      : [0., np.log10(1+1), np.log10(5+1), np.log10(10+1), np.log10(20+1), np.log10(40+1)],
-               'yticklabels' : [0.,          0.01,          0.05,           0.10,           0.20,            0.4],
-               'ylabel'      : 'Frequency',
-               'theme'       : 'boxed' }
+    pprops = { 'xlim'       : [ -0.06,  0.12],
+               'xticks'     : [ -0.06,     0,  0.06, 0.12],
+               'xminorticks': [ -0.03, 0.03, 0.09],
+               'xticklabels': [ ],
+               'ylim'       : [0., 4.8],
+               'yticks'     : [1+np.log10(1), 1+np.log10(10), 1+np.log10(100), 1+np.log10(1000)],
+               'yticklabels': [            1,             10,             100,             1000],
+               'ylabel'     : 'Counts',
+               'theme'      : 'boxed' }
     
     bins   = np.arange(-0.05, 0.10, 0.002)
 
     #### a. without escape terms
     # all mutations
     all_old, bin_edges = np.histogram(sc_all_old, bins=bins)
-    all_old            = all_old/len(sc_all_old)
+    all_old            = [1+np.log10(val) if val>0 else 0 for val in all_old]
+    # all_old            = all_old/len(sc_all_old)
     bar_x = (bin_edges[:-1] + bin_edges[1:]) / 2
 
     all_new, bin_edges = np.histogram(sc_all_new, bins=bins)
-    all_new            = all_new/len(sc_all_new)
+    all_new            = [1+np.log10(val) if val>0 else 0 for val in all_new]
+    # all_new            = all_new/len(sc_all_new)
 
-    log_all_old    = np.log10(all_old*100+1)
-    log_all_new    = np.log10(all_new*100+1)
+    # log_all_old    = np.log10(all_old*100+1)
+    # log_all_new    = np.log10(all_new*100+1)
 
-    mp.bar(ax=ax_old, x=[bar_x], y=[log_all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[log_all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[all_old], colors=[C_group[0]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[all_new], colors=[C_group[0]], plotprops=histprops, **pprops)
 
     # reversions mutations 
     rev_old, bin_edges = np.histogram(sc_rev_old, bins=bins)
-    rev_old            = rev_old/len(sc_all_old)
+    rev_old            = [1+np.log10(val) if val>0 else 0 for val in rev_old]
+    # rev_old            = rev_old/len(sc_all_old)
     
     rev_new, bin_edges = np.histogram(sc_rev_new, bins=bins)
-    rev_new            = rev_new/len(sc_all_new)
+    rev_new            = [1+np.log10(val) if val>0 else 0 for val in rev_new]
+    # rev_new            = rev_new/len(sc_all_new)
 
-    log_rev_old    = np.log10(rev_old*100+1)
-    log_rev_new    = np.log10(rev_new*100+1)
+    # log_rev_old    = np.log10(rev_old*100+1)
+    # log_rev_new    = np.log10(rev_new*100+1)
 
     histprops['alpha'] = 1
-    mp.bar(ax=ax_old, x=[bar_x], y=[log_rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
-    mp.bar(ax=ax_new, x=[bar_x], y=[log_rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_old, x=[bar_x], y=[rev_old], colors=[C_group[1]], plotprops=histprops, **pprops)
+    mp.bar(ax=ax_new, x=[bar_x], y=[rev_new], colors=[C_group[1]], plotprops=histprops, **pprops)
 
     # legend
-    legend_x  =  0.04
-    title_y   =  np.log10(21)
-    legend_y  = [np.log10(12),np.log10(7)]
-    legend_t  = ['All reversion mutation', 'Not reversion mutation']
+    legend_x  =  0.07
+    title_y   = 1+np.log10(900)
+    legend_y  = [1+np.log10(300), 1+np.log10(100)]
+    legend_t  = ['Reversion', 'Not reversion']
 
     x1 = legend_x-0.01
     x2 = legend_x-0.004
