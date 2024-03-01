@@ -1607,6 +1607,23 @@ def plotReversionFaction(**pdata):
     time = np.log(whole_time+1)
     mp.plot(type='line', ax=ax_frac, x=[time], y=[AveFraction],colors=[C_NEU], **pprops)
 
+    # legend
+    traj_legend_x =  np.log(200)
+    traj_legend_y = [0.8, 0.65]
+    traj_legend_t = ['Individual', 'Average']
+    x1 = traj_legend_x-0.4
+    x2 = traj_legend_x-0.1
+    y1 = traj_legend_y[0] + 0.012
+    y2 = traj_legend_y[1] + 0.012
+    pprops['plotprops']['alpha'] = 0.5
+    pprops['plotprops']['lw'] = SIZELINE
+    mp.line(ax=ax_frac, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[0]], **pprops)
+    pprops['plotprops']['alpha'] = 1
+    pprops['plotprops']['lw'] = SIZELINE*1.8
+    mp.line(ax=ax_frac, x=[[x1, x2]], y=[[y2, y2]], colors=[C_NEU], **pprops)
+    ax_frac.text(traj_legend_x, traj_legend_y[0], traj_legend_t[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_frac.text(traj_legend_x, traj_legend_y[1], traj_legend_t[1], ha='left', va='center', **DEF_LABELPROPS)
+
     # SAVE FIGURE
     plt.savefig('%s/reversion.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('Figure saved as reversion.pdf')
