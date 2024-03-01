@@ -1412,8 +1412,8 @@ def plot_CH470_5(**pdata):
         mp.plot(type='line', ax=ax_traj, x=xdat, y=ydat, colors=[traj_c[j]], **pprops)
 
     traj_legend_x  =  350
-    traj_legend_dy = -0.17
-    traj_legend_y  = [0.45, 0.45 + traj_legend_dy, 0.45 + 2*traj_legend_dy]
+    traj_legend_dy = -0.22
+    traj_legend_y  = [0.52, 0.52 + traj_legend_dy, 0.52 + 2*traj_legend_dy]
     traj_legend_t  = ['Other variants','974A', '3951C']
     for k in range(len(traj_legend_y)):
         yy = traj_legend_y[k]
