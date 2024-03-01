@@ -752,12 +752,10 @@ def plot_histogram_fraction_HIV(**pdata):
     tc = []
 
     for tag in tags:
-        df_tc = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        tc_old = df_tc.iloc[0].tc_MPL
-        for i in range(len(df_tc)):
-            if df_tc.iloc[i].tc_MPL != tc_old:
-                tc.append(df_tc.iloc[i].tc_MPL)
-            tc_old = df_tc.iloc[i].tc_MPL
+        df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        unique_epitopes = df_tc['epitope'].unique()
+        for epitope in unique_epitopes:
+            tc.append(df_tc[df_tc.epitope == epitope].iloc[0].tc_MPL)
 
     # get all escape contribution
     fractions = []
