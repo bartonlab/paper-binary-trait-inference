@@ -465,7 +465,11 @@ def analyze_result(tag,verbose=True):
     f.close()
 
     if len(traitsite) != 0:
-        df = pd.read_csv('%s/analysis/%s-analyze.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        if verbose:
+            df = pd.read_csv('%s/analysis/%s-analyze.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        else:
+            df = pd.read_csv('%s/noR/analysis/%s-analyze.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+
         index_cols = ['polymorphic_index', 'alignment']
         cols = [i for i in list(df) if i not in index_cols]
 
@@ -496,7 +500,7 @@ def analyze_result(tag,verbose=True):
                         g.write(',%f'%xp[i,t])
                     g.write('\n')
 
-def modify_seq(tag):
+def modify_seq(tag,special_tags):
     '''
     change sequence and escape information to calculate Δsij, reverting mutant
     variant into wild type for individual locus part and thowing out one escape
@@ -511,6 +515,10 @@ def modify_seq(tag):
     trait_sites = read_file('traitsite/traitsite-'+tag+'.dat')
 
     g = open('%s/HIV_sij.sh'%(MPL_DIR), "a")
+    if tag in special_tags:
+        g.write('g++ main.cpp inf_special.cpp io.cpp -O3 -mcpu=apple-a14 -std=c++11 -lgsl -lgslcblas -o mpl\n')
+    else:
+        g.write('g++ main.cpp inf.cpp io.cpp -O3 -mcpu=apple-a14 -std=c++11 -lgsl -lgslcblas -o mpl\n')
 
     for i in range(len(all_variants)):
         variant   = all_variants[i]
