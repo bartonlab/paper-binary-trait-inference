@@ -95,27 +95,14 @@ DEF_SUBLABELPROPS = {
 ############# PLOTTING  FUNCTIONS #############
 
 def read_file(name):
-    trait = []
-    p = open(SIM_DIR+'/jobs/'+name,'r')
-    maxlen = 0
-    maxnum = 0
-    for line in p:
-        temp = re.findall(r'-?\d+\.?\d*e?-?\d*?', line)
-        data = [float(item) for item in temp]
-        trait.append(data)
-        #print(data)
-        if len(data) > maxlen:
-            maxlen = len(data)
-        maxnum += 1
-    arr = np.zeros((maxnum, maxlen))*np.nan
-    for cnt in np.arange(maxnum):
-        arr[cnt, 0:len(trait[cnt])] = np.array(trait[cnt])
-    p.close()
-    for i in range(len(trait)):
-        for j in range(len(trait[i])):
-            trait[i][j] = int(trait[i][j])
-    return trait
-
+    result = []
+    with open('%s/%s'%(SIM_DIR,name), 'r') as file:
+        for line in file:
+            line_data = []
+            for item in line.split():
+                line_data.append(int(item))
+            result.append(line_data)
+    return result
 
 def plot_example_mpl(**pdata):
     """
@@ -148,7 +135,7 @@ def plot_example_mpl(**pdata):
     data  = np.loadtxt('%s/jobs/sequences/example-%s.dat' % (SIM_DIR, xfile))
 
     x_index = xfile.split('_')[0]
-    trait_site = read_file('traitsite/traitsite-%s.dat'%(x_index))
+    trait_site = read_file('/jobs/traitsite/traitsite-%s.dat'%(x_index))
 
     #allele frequency x
     x     = []
@@ -206,17 +193,20 @@ def plot_example_mpl(**pdata):
     box_tra1 = dict(left=0.10, right=0.48, bottom=0.55, top=0.98)
     box_tra2 = dict(left=0.58, right=0.96, bottom=0.55, top=0.98)
     box_coe1 = dict(left=0.10, right=0.48, bottom=0.05, top=0.42)
-    box_coe2 = dict(left=0.58, right=0.96, bottom=0.05, top=0.42)
+    box_coe2 = dict(left=0.58, right=0.70, bottom=0.05, top=0.42)
+    box_fit  = dict(left=0.70, right=0.99, bottom=0.05, top=0.42)
 
     gs_tra1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra1)
     gs_tra2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra2)
     gs_coe1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe1)
     gs_coe2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe2)
+    gs_fit  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_fit)
 
     ax_tra1 = plt.subplot(gs_tra1[0, 0])
     ax_tra2 = plt.subplot(gs_tra2[0, 0])
     ax_coe1 = plt.subplot(gs_coe1[0, 0])
     ax_coe2 = plt.subplot(gs_coe2[0, 0])
+    ax_fit  = plt.subplot(gs_fit[0, 0])
 
     dx = -0.04
     dy = -0.02
@@ -349,7 +339,7 @@ def plot_example_mpl(**pdata):
 
     sprops = { 'lw' : 0, 's' : 9., 'marker' : 'o' }
 
-    pprops = { 'xlim':        [-0.3,   6],
+    pprops = { 'xlim':        [-0.3,   3],
                'ylim':        [   0,0.16],
                'yticks':      [   0,0.08,0.16],
                'yminorticks': [0.02,0.04,0.06,0.10,0.12,0.14],
@@ -367,23 +357,23 @@ def plot_example_mpl(**pdata):
         c_coe2.append(C_group[i])
         c_coe2_lt.append(C_group[i])
 
-    mp.line(ax=ax_coe2, x=[[0.15, 0.85]], y=[[s_true[-1], s_true[-1]]], \
+    # ture value
+    mp.line(ax=ax_coe2, x=[[0.00, 0.70]], y=[[s_true[-1], s_true[-1]]], \
     colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
+
+    # inferred value
     plotprops = DEF_ERRORPROPS.copy()
     plotprops['alpha'] = 1
     for i in range(n_tra):
-        xdat = [np.random.normal(0.5, 0.18)]
+        xdat = [np.random.normal(0.35, 0.18)]
         ydat = [s_inf[offset+i]]
         yerr = np.sqrt(ds[offset+i][offset+i])
-        if i==n_tra-1:
-            mp.plot(type='error', ax=ax_coe2, x=[xdat], y=[ydat], yerr=[yerr], \
-            edgecolor=[c_coe2[i]], facecolor=[c_coe2_lt[i]], plotprops=plotprops, **pprops)
-        else:
-            mp.error(ax=ax_coe2, x=[xdat], y=[ydat], yerr=[yerr], \
-            edgecolor=[c_coe2[i]], facecolor=[c_coe2_lt[i]], plotprops=plotprops, **pprops)
+        mp.error(ax=ax_coe2, x=[xdat], y=[ydat], yerr=[yerr], \
+        edgecolor=[c_coe2[i]], facecolor=[c_coe2_lt[i]], plotprops=plotprops, **pprops)
 
+    # legend
     coef_legend_d  = -0.15 * (6.3 / 4.3)
-    coef_legend_x  =  1.8
+    coef_legend_x  =  1.65
     coef_legend_dy = -0.11 * (0.16 / 0.9)  #-0.02
     coef_legend_y  = []
     coef_legend_t  = []
@@ -396,12 +386,34 @@ def plot_example_mpl(**pdata):
         ax_coe2.text(coef_legend_x, coef_legend_y[k], coef_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
 
     yy =  0.135 +(0.5+n_tra) * coef_legend_dy
-    mp.line(ax=ax_coe2, x=[[coef_legend_x-0.24, coef_legend_x-0.09]], y=[[yy, yy]], \
+    mp.plot(type='line',ax=ax_coe2, x=[[coef_legend_x-0.24, coef_legend_x-0.09]], y=[[yy, yy]], \
     colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
     ax_coe2.text(coef_legend_x, yy, 'True\ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
 
     ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
+    # # e -- inset fitness model picture
+    # use mpimg.imread to read the image
+    img = mpimg.imread('%s/fitness_model.png'%FIG_DIR)
+    # ax_fit.imshow(img,aspect='equal') # display the image
+    # ax_fit.axis('off') # no axis
+
+    # obtain the width and height of the image
+    height, width, _ = img.shape
+    x_min, x_max = 0, width
+    y_min, y_max = -height / 2, height / 2
+
+    # show the image and set the extent
+    ax_fit.imshow(img, extent=[x_min, x_max, y_min, y_max])
+
+    # adjust the x-axis range to make the image fit the left side of the figure
+    ax_fit.set_xlim(0, width*1.5)  # the image fit the left side of the figure
+    ax_fit.set_ylim(-height / 2, height / 2)  # the image fit the middle side of the figure
+
+    # close the axis
+    ax_fit.axis('off')
+
+    ax_fit.text(box_fit['left']+0.02, box_fit['top']-0.02, 'e'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
     # SAVE FIGURE
     if show_fig:
         plt.savefig('%s/fig1-sim.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
@@ -547,7 +559,7 @@ def plot_histogram_sim(**pdata):
                'theme'       : 'boxed' }
     tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
 
-    ax_aur1.pcolor(AUC_matrix_ben.T, vmin=0.75, vmax=1.0, cmap='GnBu', alpha=0.75)
+    ax_aur1.pcolor(AUC_matrix_ben.T, vmin=0.75, vmax=1.0, colors='GnBu', alpha=0.75)
     for i in range(len(AUC_matrix_ben)):
         for j in range(len(AUC_matrix_ben[0])):
             tc = 'k'
@@ -555,7 +567,7 @@ def plot_histogram_sim(**pdata):
             ax_aur1.text(i+0.5, j+0.5, '%.2f' % (AUC_matrix_ben[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_aur1, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
-    ax_aur2.pcolor(AUC_matrix_del.T, vmin=0.75, vmax=1.0, cmap='GnBu', alpha=0.75)
+    ax_aur2.pcolor(AUC_matrix_del.T, vmin=0.75, vmax=1.0, colors='GnBu', alpha=0.75)
     for i in range(len(AUC_matrix_del)):
         for j in range(len(AUC_matrix_del[0])):
             tc = 'k'
@@ -563,7 +575,7 @@ def plot_histogram_sim(**pdata):
             ax_aur2.text(i+0.5, j+0.5, '%.2f' % (AUC_matrix_del[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_aur2, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
-    ax_erro.pcolor(err_matrix_tra.T, vmin=0.2, vmax=0.8, cmap='GnBu', alpha=0.75)
+    ax_erro.pcolor(err_matrix_tra.T, vmin=0.2, vmax=0.8, colors='GnBu', alpha=0.75)
     for i in range(len(err_matrix_tra)):
         for j in range(len(err_matrix_tra[0])):
             tc = 'k'
@@ -1339,7 +1351,7 @@ def plot_CH470_5(**pdata):
     var_c = sns.husl_palette(len(var_tag)+len(hig_traj))
     traj_c = [var_c[-2],var_c[-1]]
 
-    ## a -- inferred selection coefficients with VS. without poluygenic term
+    ## a -- inferred selection coefficients with VS. without binary trait term
 
     s_min = -0.02
     s_max =  0.05
@@ -2929,3 +2941,634 @@ def plot_site_reversion(**pdata):
 
 #     # SAVE FIGURE
 #     # plt.savefig('%s/sc_escape_new.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+
+def plot_example_tv(**pdata):
+    """
+    Example evolutionary trajectory for a 50-site system and inferred selection coefficients
+    and trait coefficients, together with aggregate properties for different levels of sampling..
+    """
+
+    # unpack passed data
+
+    n_gen    = pdata['n_gen']
+    dg       = pdata['dg']
+    pop_size = pdata['N']
+    xfile    = pdata['xfile']
+    xpath    = pdata['xpath']
+
+    n_ben    = pdata['n_ben']
+    n_neu    = pdata['n_neu']
+    n_del    = pdata['n_del']
+    n_tra    = pdata['n_tra']
+    s_ben    = pdata['s_ben']
+    s_del    = pdata['s_del']
+    s_tra    = pdata['s_tra']
+
+    r_seed = pdata['r_seed']
+    np.random.seed(r_seed)
+
+    show_fig = pdata['show_fig']
+    # load and process data files
+
+    data  = np.loadtxt('%s/%s/sequences/example-%s.dat' % (SIM_DIR, xpath, xfile))
+
+    x_index = xfile.split('_')[0]
+    trait_site = read_file('/%s/traitsite/traitsite-%s.dat'%(xpath, x_index))
+
+    #allele frequency x
+    x     = []
+    for i in range(0, n_gen, dg):
+        idx    = data.T[0]==i
+        t_data = data[idx].T[2:].T
+        t_num  = data[idx].T[1].T
+        t_freq = np.einsum('i,ij->j', t_num, t_data) / float(np.sum(t_num))
+        x.append(t_freq)
+    x = np.array(x).T # get allele frequency (binary case)
+
+    #trait frequency y
+    y    = []
+    for t in range(0, n_gen, dg):
+        idx    = data.T[0]==t
+        t_num  = data[idx].T[1].T
+        t_fre     = []
+        for i in range(len(trait_site)):
+            t_data_i  = t_num*0
+            for j in range(len(trait_site[i])):
+                site = trait_site[i][j]
+                t_data_i += data[idx].T[site+2]
+            for k in range(len(t_data_i)):
+                if t_data_i[k] != 0:
+                    t_data_i[k] = 1
+            t_freq_i = np.einsum('i,i', t_num, t_data_i) / float(np.sum(t_num))
+            t_fre.append(t_freq_i)
+        y.append(t_fre)
+    y = np.array(y).T # get trait frequency
+
+    s_true  = [s_ben for i in range(n_ben)] + [0 for i in range(n_neu)] + [s_del for i in range(n_del)]
+    
+    # binary case
+    s_inf   = np.loadtxt('%s/%s/output/sc-%s.dat' %(SIM_DIR,xpath,x_index))
+    cov     = np.loadtxt('%s/%s/covariance/covariance-%s.dat' %(SIM_DIR,xpath,x_index))
+    ds      = np.linalg.inv(cov) / pop_size
+
+    # PLOT FIGURE
+    ## set up figure grid
+    w     = DOUBLE_COLUMN
+    goldh = w/2.5
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_tra1 = dict(left=0.10, right=0.48, bottom=0.55, top=0.98)
+    box_tra2 = dict(left=0.58, right=0.96, bottom=0.55, top=0.98)
+    box_coe1 = dict(left=0.10, right=0.48, bottom=0.05, top=0.42)
+    box_coe2 = dict(left=0.58, right=0.96, bottom=0.15, top=0.42)
+
+    gs_tra1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra1)
+    gs_tra2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra2)
+    gs_coe1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe1)
+    gs_coe2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe2)
+
+    ax_tra1 = plt.subplot(gs_tra1[0, 0])
+    ax_tra2 = plt.subplot(gs_tra2[0, 0])
+    ax_coe1 = plt.subplot(gs_coe1[0, 0])
+    ax_coe2 = plt.subplot(gs_coe2[0, 0])
+
+    dx = -0.04
+    dy = -0.02
+
+    ## a -- all allele trajectories together
+    pprops = { 'xticks':      [0, 200, 400, 600, 800,1000],
+               'yticks':      [0,1],
+               'yminorticks': [0.25, 0.5, 0.75],
+               'nudgey':      1.1,
+               'xlabel':      'Generation',
+               'ylabel':      'Allele\nfrequency, ' + r'$x$',
+               'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1 },
+               'axoffset':    0.1,
+               'theme':       'open' }
+
+    xdat = [range(0, n_gen, dg) for k in range(n_ben)]
+    ydat = [k for k in x[:n_ben]]
+    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_BEN_LT for k in range(len(x))], **pprops)
+
+    xdat = [range(0, n_gen, dg) for k in range(n_del)]
+    ydat = [k for k in x[n_ben+n_neu:]]
+    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_DEL_LT for k in range(len(x))], **pprops)
+
+    xdat = [range(0, n_gen, dg) for k in range(n_neu)]
+    ydat = [k for k in x[n_ben:n_ben+n_neu]]
+    pprops['plotprops']['alpha'] = 0.4
+    mp.plot(type='line',ax=ax_tra1, x=xdat, y=ydat, colors = [C_NEU for k in range(len(x))], **pprops)
+
+    ax_tra1.text(box_tra1['left']+dx, box_tra1['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # b -- all trait trajectories together
+    pprops = { 'xticks':      [0, 200, 400, 600, 800,1000],
+               'yticks':      [0, 1],
+               'yminorticks': [0.25,0.5, 0.75],
+               'nudgey':      1.1,
+               'xlabel':      'Generation',
+               'ylabel':      'Frequency, ' + r'$x$',
+               'plotprops':   {'lw': SIZELINE, 'ls': '-' , 'alpha': 1},
+               'axoffset':    0.1,
+               'theme':       'open' }
+
+    traj_legend_x  = 265
+    traj_legend_y  = [0.65, 0.40]
+    traj_legend_t  = ['Trait\nfrequency','Individual \nallele frequency']
+
+    for k in range(len(traj_legend_y)):
+        x1 = traj_legend_x-50
+        x2 = traj_legend_x-10
+        y1 = traj_legend_y[0] + (0.5-k) * 0.03
+        y2 = traj_legend_y[1] + (0.5-k) * 0.03
+        pprops['plotprops']['alpha'] = 1
+        mp.line(ax=ax_tra2, x=[[x1, x2]], y=[[y1, y1]], colors=[C_group[k]], **pprops)
+        pprops['plotprops']['alpha'] = 0.4
+        mp.line(ax=ax_tra2, x=[[x1, x2]], y=[[y2, y2]], colors=[C_group[k]], **pprops)
+        ax_tra2.text(traj_legend_x, traj_legend_y[k], traj_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
+
+    xdat = [range(0, n_gen, dg)]
+    for i in range(len(trait_site)):
+        for j in range(len(trait_site[i])):
+            site = trait_site[i][j]
+            ydat = [k for k in x[site:site+1]]
+            pprops['plotprops']['alpha'] = 0.6
+            mp.line(ax=ax_tra2, x=xdat, y=ydat, colors=[C_group[i]], **pprops)
+        if i > 0:
+            ydat = [k for k in y[i:i+1]]
+            pprops['plotprops']['alpha'] = 1
+            mp.line(ax=ax_tra2, x=xdat, y=ydat, colors = [C_group[i]], **pprops)
+
+    ydat = [k for k in y[0:1]]
+    pprops['plotprops']['alpha'] = 1
+    mp.plot(type='line',ax=ax_tra2, x=xdat, y=ydat, colors = [C_group[0]], **pprops)
+
+    ax_tra2.text(box_tra2['left']+dx, box_tra1['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    ## c -- individual beneficial/neutral/deleterious selection coefficients
+
+    sprops = { 'lw' : 0, 's' : 9., 'marker' : 'o' }
+    pprops = { 'xlim':        [ -0.3,    4],
+               'ylim':        [-0.05, 0.04],
+               'yticks':      [-0.04, 0, 0.04],
+               'yminorticks': [-0.03, -0.02, -0.01, 0.01, 0.02, 0.03],
+               'yticklabels': [-4, 0, 4],
+               'xticks':      [],
+               'ylabel':      'Inferred selection\ncoefficient, ' + r'$\hat{s}$' + ' (%)',
+               'theme':       'open',
+               'hide':        ['bottom'] }
+
+    n_coe1    = [n_ben, n_neu, n_del]
+    c_coe1    = [C_BEN, C_NEU, C_DEL]
+    c_coe1_lt = [C_BEN_LT, C_NEU_LT, C_DEL_LT]
+    offset    = [0, n_ben, n_ben+n_neu]
+
+    for k in range(len(n_coe1)):
+        mp.line(ax=ax_coe1, x=[[k-0.35, k+0.35]], y=[[s_true[offset[k]], s_true[offset[k]]]], \
+        colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
+        plotprops = DEF_ERRORPROPS.copy()
+        plotprops['alpha'] = 1
+        for i in range(n_coe1[k]):
+            xdat = [k + np.random.normal(0, 0.08)]
+            ydat = [s_inf[offset[k]+i]]
+            yerr = np.sqrt(ds[offset[k]+i][offset[k]+i])
+            if i==n_coe1[k]-1 and k==len(n_coe1)-1:
+                mp.plot(type='error', ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], \
+                edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+            else:
+                mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[c_coe1[k]], \
+                facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+
+    coef_legend_x  =  2.8
+    coef_legend_d  = -0.15
+    coef_legend_dy = -0.011
+    coef_legend_y  = [0.02, 0.02 + coef_legend_dy, 0.02 + (2*coef_legend_dy)]
+    coef_legend_t  = ['Beneficial', 'Neutral', 'Deleterious']
+    for k in range(len(coef_legend_y)):
+        mp.error(ax=ax_coe1, x=[[coef_legend_x+coef_legend_d]], y=[[coef_legend_y[k]]], \
+                 edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+        ax_coe1.text(coef_legend_x, coef_legend_y[k], coef_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
+
+    yy =  0.02 + 3.5 * coef_legend_dy
+    mp.line(ax=ax_coe1, x=[[coef_legend_x-0.21, coef_legend_x-0.09]], y=[[yy, yy]], \
+    colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
+    ax_coe1.text(coef_legend_x, yy, 'True \ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
+
+    ax_coe1.text(box_coe1['left']+dx, box_coe1['top']+0.04, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    ## d -- trait coefficients
+    pprops = { 'xlim':        [0, 1000],
+               'xticks':      [0, 200, 400, 600, 800, 1000],
+               'ylim':        [   0,0.16],
+               'yticks':      [   0,0.08,0.16],
+               'yminorticks': [0.02,0.04,0.06,0.10,0.12,0.14],
+               'yticklabels': [   0,   8,  16],
+               'xlabel':      'Generation (days)',
+               'ylabel':      'Inferred trait\ncoefficient, ' + r'$\hat{s}$' + ' (%)',
+               'plotprops':   {'lw': SIZELINE, 'ls': ':', 'alpha': 1 },
+               'theme':       'open'}
+
+    times       = np.linspace(0,n_gen,int(n_gen+1))
+
+    n_coe2    = []
+    c_coe2    = []
+    c_coe2_lt = []
+    offset    = n_ben+n_neu+n_del
+    for i in range(n_tra):
+        c_coe2.append(C_group[i])
+        c_coe2_lt.append(C_group[i])
+
+    mp.line(ax=ax_coe2, x=[times], y=[s_tra], colors=[BKCOLOR], **pprops)
+    pprops['plotprops']['ls'] = '-'
+    for i in range(n_tra):
+        xdat = [0,1000]
+        ydat = [s_inf[offset+i],s_inf[offset+i]]
+        yerr = np.sqrt(ds[offset+i][offset+i])
+        mp.line(ax=ax_coe2, x=[xdat], y=[ydat], colors=[c_coe2[i]], **pprops)
+    
+    # legend
+    coef_legend_x  = 600
+    coef_legend_y  = 0.145
+    coef_legend_dy = -0.025
+    coef_legend_t  = []
+    for i in range(len(trait_site)):
+        coef_legend_t.append('Trait %d'%(i+1))
+
+    for k in range(len(trait_site)):
+        yy = coef_legend_y + k * coef_legend_dy
+        mp.line(ax=ax_coe2, x=[[coef_legend_x-100, coef_legend_x-50]], y=[[yy, yy]], colors=[c_coe2[k]], **pprops)
+        ax_coe2.text(coef_legend_x, yy, coef_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
+
+    yy =  coef_legend_y + len(trait_site) * coef_legend_dy
+    pprops['plotprops']['ls'] = ':'
+    mp.plot(type='line',ax=ax_coe2, x=[[coef_legend_x-100, coef_legend_x-50]], y=[[yy, yy]], colors=[BKCOLOR], **pprops)
+    ax_coe2.text(coef_legend_x, yy, 'True coefficient', ha='left', va='center', **DEF_LABELPROPS)
+
+    ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # SAVE FIGURE
+    if show_fig:
+        plt.savefig('%s/sufig-sim-tv.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        print('Figure saved as sufig-sim-tv.pdf')
+    else:
+        plt.savefig('%s/tv/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+        plt.close()
+
+
+def plot_different_r(**pdata):
+
+    # unpack data
+
+    tags    = pdata['tags']
+    r_rates = pdata['r_rates']
+    lim_sc  = pdata['lim_sc']
+    lim_tc  = pdata['lim_tc']
+    tick_sc = pdata['tick_sc']
+    tick_tc = pdata['tick_tc']
+
+    var_sc = [[] for _ in range(len(r_rates))]
+    var_tc = [[] for _ in range(len(r_rates))]
+    
+    for tag in tags:
+        df_poly = pd.read_csv('%s/analysis/%s-analyze-R.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+        for df_iter, df_entry in df_poly.iterrows():
+            if df_entry.sc_MPL != 0 and df_entry.nucleotide != '-':
+                for j in range(len(r_rates)):
+                    var_sc[j].append(df_entry['sc_%d' %j])
+
+        df_trait    = pd.read_csv('%s/group/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        var_tc_0    = 0
+        for df_iter, df_entry in df_trait.iterrows():
+            if pd.isna(df_entry.tc_MPL) ==  False:
+                if df_entry.tc_MPL != var_tc_0:
+                    for j in range(len(r_rates)):
+                        var_tc[j].append(df_entry['tc_%d' %j])
+                var_tc_0 = df_entry.tc_MPL
+
+    var_sc_array = np.array(var_sc)
+    var_tc_array = np.array(var_tc)
+
+    sc_var = var_sc_array.T
+    tc_var = var_tc_array.T
+
+    # PLOT FIGURE
+
+    ## set up figure grid
+
+    w     = DOUBLE_COLUMN
+    goldh = w/3.5
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_sc = dict(left=0.10, right=0.38, bottom=0.15, top=0.90)
+    box_tc = dict(left=0.48, right=0.76, bottom=0.15, top=0.90)
+    box_label = dict(left=0.80, right=0.96, bottom=0.15, top=0.92)
+
+    gs_sc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_sc)
+    gs_tc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tc)
+    gs_label = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_label)
+
+    ax_sc = plt.subplot(gs_sc[0, 0])
+    ax_tc = plt.subplot(gs_tc[0, 0])
+    ax_label = plt.subplot(gs_label[0, 0])
+
+    dx = -0.05
+    dy =  0.04
+
+    cmap = plt.get_cmap('tab20')
+    colors = [cmap(i) for i in range(len(r_rates)-2)]
+
+    ## a -- inferred selection coefficients with VS. without binary trait term
+    lineprops   = { 'lw' : SIZELINE, 'linestyle' : '-', 'alpha' : 0.8}
+
+    pprops = { 'xlim':         lim_sc,
+               'ylim':         lim_sc,
+               'xticks':       tick_sc,
+               'yticks':       tick_sc,
+               'xticklabels':  [int(i*100) for i in tick_sc],
+               'yticklabels':  [int(i*100) for i in tick_sc],
+               'xlabel':       'Inferred selection coefficients for individual locus, '+ r'$\hat{s}$' + ' (%)',
+               'ylabel':       'Inferred selection coefficients with \na different recombination rate, '+ r'$\hat{s}$' + ' (%)',
+               'theme':        'boxed'}
+    
+    for i in range(len(sc_var)):
+
+        for j in range(len(r_rates)-2):
+            x_i = [sc_var[i][j],   sc_var[i][j+1]]
+            y_i = [sc_var[i][j+1], sc_var[i][j+2]]
+
+            if i == len(sc_var)-1 and j == len(r_rates)-3:
+                mp.plot(type='line', ax=ax_sc, x=[x_i], y=[y_i], colors=[colors[j]],plotprops=lineprops, **pprops)
+            else:
+                mp.line(             ax=ax_sc, x=[x_i], y=[y_i], colors=[colors[j]],plotprops=lineprops, **pprops)
+
+    ax_sc.text(box_sc['left']+dx, box_sc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # b -- trajectory plot
+
+    pprops = { 'xlim':         lim_tc,
+               'ylim':         lim_tc,
+               'xticks':       tick_tc,
+               'yticks':       tick_tc,
+               'xticklabels':  [int(i*100) for i in tick_tc],
+               'yticklabels':  [int(i*100) for i in tick_tc],
+               'xlabel':       'Inferred selection coefficients for binary trait, '+ r'$\hat{s}$' + ' (%)',
+               'ylabel':       'Inferred selection coefficients with \na different recombination rate, '+ r'$\hat{s}$' + ' (%)',
+               'theme':        'boxed'}
+    
+    for i in range(len(tc_var)):
+        for j in range(len(r_rates)-2):
+            x_i = [tc_var[i][j],   tc_var[i][j+1]]
+            y_i = [tc_var[i][j+1], tc_var[i][j+2]]
+
+            if i == len(tc_var)-1 and j == len(r_rates)-3:
+                mp.plot(type='line', ax=ax_tc, x=[x_i], y=[y_i], colors=[colors[j]],plotprops=lineprops, **pprops)
+            else:
+                mp.line(             ax=ax_tc, x=[x_i], y=[y_i], colors=[colors[j]],plotprops=lineprops, **pprops)
+        
+    ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # c -- label
+    pprops = { 'xlim':         [ 0, 10],
+               'ylim':         [ 0, 10],
+               'xticks':       [],
+               'yticks':       [],
+               'xlabel':       '',
+               'ylabel':       '',
+               'theme':       'open',
+               'hide':        ['bottom','left']}
+
+    ax_label.text(1, 9, 'start', ha='left', va='center', **DEF_LABELPROPS)
+    ax_label.text(1, 9 - 0.65*(len(r_rates)-1), 'end', ha='left', va='center', **DEF_LABELPROPS)
+    ax_label.text(4, 9, r'$r = %.2e$' % r_rates[0], ha='left', va='center', **DEF_LABELPROPS)
+    ax_label.text(4, 9 - 0.65*(len(r_rates)-1), r'$r = %.2e$' % r_rates[-1], ha='left', va='center', **DEF_LABELPROPS)
+
+    for i in range(len(r_rates)-2):
+        yy_i = 9.0 - 0.65 * (i + 1) 
+
+        ax_label.text(4, yy_i, r'$r = %.2e$' % r_rates[i+1], ha='left', va='center', **DEF_LABELPROPS)
+
+        if i == len(r_rates) - 3:
+            mp.plot(type='line', ax=ax_label, x=[[1,3]], y=[[yy_i, yy_i]], colors=[colors[i]],plotprops=lineprops, **pprops)
+        else:
+            mp.line(             ax=ax_label, x=[[1,3]], y=[[yy_i, yy_i]], colors=[colors[i]],plotprops=lineprops, **pprops)
+
+    # SAVE FIGURE
+    plt.savefig('%s/sufig-different-r.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sufig-different-r.pdf')
+
+
+def plot_different_r_tc(**pdata):
+
+    # unpack data
+
+    tags    = pdata['tags']
+    r_rates = pdata['r_rates']   # all recombination rates
+    index   = pdata['index']     # index for normal recombination rate 
+    lim_tc_x  = pdata['lim_tc_x']    # limit for trait coefficient with a normal recombination rate
+    lim_tc_y  = pdata['lim_tc_y']    # limit for trait coefficient with all recombination rates
+    tick_tc_x = pdata['tick_tc_x']   # ticks for trait coefficient with a normal recombination rate
+    tick_tc_y = pdata['tick_tc_y']   # ticks for trait coefficient with all recombination rates
+
+    var_tc = [[] for _ in range(len(r_rates))]
+    
+    for tag in tags:
+        df_trait    = pd.read_csv('%s/group/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        var_tc_0    = 0
+        for df_iter, df_entry in df_trait.iterrows():
+            if pd.isna(df_entry.tc_MPL) ==  False:
+                if df_entry.tc_MPL != var_tc_0:
+                    for j in range(len(r_rates)):
+                        var_tc[j].append(df_entry['tc_%d' %j])
+                var_tc_0 = df_entry.tc_MPL
+
+    # PLOT FIGURE
+
+    ## set up figure grid
+
+    w     = DOUBLE_COLUMN
+    goldh = w/3.5
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_tc = dict(left=0.10, right=0.66, bottom=0.15, top=0.90)
+    box_label = dict(left=0.70, right=0.90, bottom=0.15, top=0.90)
+
+    gs_tc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tc)
+    gs_label = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_label)
+
+    ax_tc = plt.subplot(gs_tc[0, 0])
+    ax_label = plt.subplot(gs_label[0, 0])
+
+    dx = -0.05
+    dy =  0.04
+
+    cmap = plt.get_cmap('tab20')
+    colors = [cmap(i) for i in range(len(r_rates))]
+
+    ## a -- distribution of inferred trait coefficients with different recombination rates
+
+    scatterprops = dict(lw=0, s=SMALLSIZEDOT*0.6, marker='o', alpha=0.6, clip_on=False)
+    lineprops   = { 'lw' : SIZELINE, 'linestyle' : ':', 'alpha' : 0.8}
+    
+    pprops = { 'xlim':         lim_tc_x,
+               'ylim':         lim_tc_y,
+               'xticks':       tick_tc_x,
+               'yticks':       tick_tc_y,
+               'xticklabels':  [int(i*100) for i in tick_tc_x],
+               'yticklabels':  [int(i*100) for i in tick_tc_y],
+               'xlabel':       'Inferred selection coefficients for binary trait, '+ r'$\hat{s}$' + ' (%)',
+               'ylabel':       'Inferred selection coefficients with \na different recombination rate, '+ r'$\hat{s}$' + ' (%)',
+               'theme':        'boxed'}
+    
+    mp.plot(type='line', ax=ax_tc, x=[lim_tc_x], y=[lim_tc_x], colors=[C_NEU],plotprops=lineprops, **pprops)
+
+    for i in range(len(r_rates)):
+        if i == len(r_rates)-1:
+            mp.plot(type='scatter', ax=ax_tc, x=[var_tc[index]], y=[var_tc[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:
+            mp.scatter(             ax=ax_tc, x=[var_tc[index]], y=[var_tc[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        
+    ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # b -- label
+    pprops = { 'xlim':         [ 0, 10],
+               'ylim':         [ 0, 10],
+               'xticks':       [],
+               'yticks':       [],
+               'xlabel':       '',
+               'ylabel':       '',
+               'theme':       'open',
+               'hide':        ['bottom','left']}
+
+    for i in range(len(r_rates)):
+        yy_i = 9.5 - 0.65 * i
+
+        ax_label.text(4, yy_i, r'$r = %.2e$' % r_rates[i], ha='left', va='center', **DEF_LABELPROPS)
+
+        if i == (len(r_rates) - 1):
+            mp.plot(type='scatter', ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:
+            mp.scatter(             ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+
+    # SAVE FIGURE
+    plt.savefig('%s/sufig-different-r-tc.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sufig-different-r-tc.pdf')
+ 
+
+def plot_virus_load(**pdata):
+
+    # unpack data
+
+    tags    = pdata['tags']
+    
+    def get_times(tag):
+        seq      = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+        times = []
+        for i in range(len(seq)):
+            times.append(seq[i][0])
+        return np.unique(times)
+
+    interpolation = lambda a,b: sp_interpolate.interp1d(a,b,kind='linear',fill_value=(0,0), bounds_error=False)
+
+    times_all = []
+    vl_all    = []
+
+    times_sample_all = [[] for _ in range(len(tags))]
+    vl_sample_all    = [[] for _ in range(len(tags))]
+
+    for i in range(len(tags)):
+        tag = tags[i]
+        ppt = tag[:9]
+        df_vl    = pd.read_csv('%s/virus load/%s.csv' %(HIV_DIR,ppt), header=None)
+
+        df_vl.columns = ['time', 'virus_load']
+
+        sample_times = get_times(tag)
+
+        times = [int(i) for i in df_vl['time'].values]
+        virus_load = [i for i in df_vl['virus_load'].values]
+
+        whole_time = np.linspace(int(times[0]),int(times[-1]),int(times[-1]-times[0]+1))
+        AllVL = interpolation(times, virus_load)(whole_time)
+
+        for t in sample_times:
+            if t <= whole_time[-1] and t >= whole_time[0]:
+                index = list(whole_time).index(t)
+                vl_sample_all[i].append(AllVL[index])
+                times_sample_all[i].append(t)   # remove the time points outside the range
+
+        times_all.append(whole_time)
+        vl_all.append(AllVL)
+
+
+    # PLOT FIGURE
+
+    ## set up figure grid
+
+    w     = DOUBLE_COLUMN
+    goldh = w/2.5
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_tc = dict(left=0.10, right=0.66, bottom=0.15, top=0.90)
+    box_label = dict(left=0.70, right=0.90, bottom=0.15, top=0.90)
+
+    gs_tc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tc)
+    gs_label = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_label)
+
+    ax_tc = plt.subplot(gs_tc[0, 0])
+    ax_label = plt.subplot(gs_label[0, 0])
+
+    dx = -0.05
+    dy =  0.04
+
+    cmap = plt.get_cmap('tab20')
+    colors = [cmap(i) for i in range(len(tags))]
+
+    ## a -- distribution of inferred trait coefficients with different recombination rates
+
+    scatterprops = dict(lw=0, s=SMALLSIZEDOT*0.6, marker='o', alpha=1.0, clip_on=False)
+    lineprops   = { 'lw' : SIZELINE, 'linestyle' : ':', 'alpha' : 0.6}
+    
+    pprops = { 'xlim':         [0,350],
+               'ylim':         [3,7],
+               'xticks':       [0,100,200,300],
+               'yticks':       [3,4,5,6,7],
+               'xlabel':       'Time (days) ',
+               'ylabel':       'log10 viral load',
+               'theme':        'boxed'}
+
+    for i in range(len(tags)):
+        mp.plot(type='line', ax=ax_tc, x=[times_all[i]], y=[vl_all[i]], colors=[colors[i]],plotprops=lineprops, **pprops)
+    
+    for i in range(len(tags)):
+        if i == len(tags)-1:
+            mp.plot(type='scatter', ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_all[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:
+            mp.scatter(             ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_all[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        
+    ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # b -- label
+    pprops = { 'xlim':         [ 0, 10],
+               'ylim':         [ 0, 10],
+               'xticks':       [],
+               'yticks':       [],
+               'xlabel':       '',
+               'ylabel':       '',
+               'theme':       'open',
+               'hide':        ['bottom','left']}
+
+    for i in range(len(tags)):
+        yy_i = 9.5 - 0.65 * i
+
+        ax_label.text(4, yy_i, '%s' % tags[i], ha='left', va='center', **DEF_LABELPROPS)
+
+        if i == (len(tags) - 1):
+            mp.plot(type='scatter', ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:
+            mp.scatter(             ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+
+    # SAVE FIGURE
+    plt.savefig('%s/sufig-vl.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sufig-vl.pdf')
+ 
+ 

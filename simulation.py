@@ -200,7 +200,7 @@ def simulate(**pdata):
     simulate(pop,history)
 
     # write the output file - dat format
-    f = open("./%s/%s/example-%s.dat"%(SIM_DIR,xpath,xfile),'w')
+    f = open("./%s/%s/%s.dat"%(SIM_DIR,xpath,xfile),'w')
     for i in range(len(history)):
         pop_at_t = history[i]
         genotypes = pop_at_t.keys()
@@ -220,6 +220,219 @@ def simulate(**pdata):
         print('the length of the sequence is %d, with %d beneficial sites (%s) and %d deleterious sites（%s)'%(seq_length,n_ben,s_ben,n_del,s_del))
         print('containing %d trait groups with trait coefficients equal to %s, they are '%(ne,s_tra))
         print(escape_group)
+
+
+def simulate_tv(**pdata):
+    """
+    Example evolutionary trajectory for a 20-site system
+    """
+
+    # unpack passed data
+    alphabet      = pdata['alphabet']       # ['A','T']
+    xpath         = pdata['xpath']          # 'time-varying'
+    xfile         = pdata['xfile']          # '0_ns1000_dt1'
+    n_gen         = pdata['n_gen']
+    pop_size      = pdata['N']              # 1000
+    mu            = pdata['mu']             # 2e-4
+    r_rate        = pdata['r']              # 2e-4
+    n_ben         = pdata['n_ben']          # 2
+    n_neu         = pdata['n_neu']          # 6
+    n_del         = pdata['n_del']          # 2
+    s_ben         = pdata['s_ben']          # 0.02
+    s_del         = pdata['s_del']          # -0.02
+    s_tra         = pdata['s_tra']
+    escape_group  = pdata['escape_group']
+    inital_state  = pdata['inital_state']   # 4
+
+    q  = len(alphabet)
+    ne = len(escape_group)
+
+    seq_length = n_ben+n_neu+n_del
+
+    ############################################################################
+    ############################## function ####################################
+    # get fitness of new genotype
+    def get_fitness_alpha(genotype,time):
+        fitness = 1.0
+    
+        # individual locus
+        for i in range(n_ben):
+            if genotype[i] != "A": # beneficial mutation
+                fitness += s_ben
+        for i in range(n_del):
+            if genotype[-(i+1)] != "A": # deleterious mutation
+                fitness += s_del
+        
+        # binary trait
+        for n in range(ne):
+            for nn in escape_group[n]:
+                if genotype[nn] != "A":
+                    fitness += s_tra[time]
+                    break
+        return fitness
+
+    def get_recombination(genotype1,genotype2):
+        #choose one possible mutation site
+        recombination_point = np.random.randint(seq_length-1) + 1
+        # get two offspring genotypes
+        genotype_off = genotype1[:recombination_point] + genotype2[recombination_point:]
+        return genotype_off
+
+    def recombination_event(genotype,genotype_ran,pop):
+        if pop[genotype] > 1:
+            pop[genotype] -= 1
+            if pop[genotype] == 0:
+                del pop[genotype]
+
+            new_genotype = get_recombination(genotype,genotype_ran)
+            if new_genotype in pop:
+                pop[new_genotype] += 1
+            else:
+                pop[new_genotype] = 1
+        return pop
+    
+    # create all recombinations that occur in a single generation
+    def recombination_step(pop):
+        genotypes = list(pop.keys())
+        numbers = list(pop.values())
+        weights = [float(n) / sum(numbers) for n in numbers]
+        for genotype in genotypes:
+            n = pop[genotype]
+            # calculate the likelihood to recombine
+            # recombination rate per locus r,  P = (1 - (1-r)^(L - 1)) = r(L-1)
+            total_rec = r_rate*(seq_length - 1)
+            nflux_rec = np.random.binomial(n, total_rec)
+            for j in range(nflux_rec):
+                genotype_ran = np.random.choice(genotypes, p=weights)
+                recombination_event(genotype,genotype_ran,pop)
+        return pop
+    
+    # for different genotypes, they have different mutation probablity
+    # this total mutation value represents the likelihood for one genotype to mutate
+    # if there is only 2 alleles and only one mutation rate, total_mu = mutation rate * sequence length
+    # take a supplied genotype and mutate a site at random.
+    def get_mutant(genotype): #binary case
+        #choose one possible mutation site
+        site = np.random.randint(seq_length)
+        # mutate (binary case, from WT to mutant or vice)
+        mutation = list(alphabet)
+        mutation.remove(genotype[site])
+        # get new mutation sequence
+        new_genotype = genotype[:site] + mutation[0] + genotype[site+1:]
+        return new_genotype
+
+    # check if the mutant already exists in the population.
+    #If it does, increment this mutant genotype
+    #If it doesn't create a new genotype of count 1.
+    # If a mutation event creates a new genotype, calculate its fitness.
+    def mutation_event(genotype,pop):
+        if pop[genotype] > 1:
+            pop[genotype] -= 1
+            if pop[genotype] == 0:
+                del pop[genotype]
+
+            new_genotype = get_mutant(genotype)
+            if new_genotype in pop:
+                pop[new_genotype] += 1
+            else:
+                pop[new_genotype] = 1
+        return pop
+
+    # create all the mutations that occur in a single generation
+    def mutation_step(pop):
+        genotypes = list(pop.keys())
+        for genotype in genotypes:
+            n = pop[genotype]
+            # calculate the likelihood to mutate
+            total_mu = seq_length * mu # for binary case
+            nMut = np.random.binomial(n, total_mu)
+            for j in range(nMut):
+                mutation_event(genotype,pop)
+        return pop
+
+    # genetic drift
+    def offspring_step(pop,time):
+        genotypes = list(pop.keys())
+        r = []
+        for genotype in genotypes:
+            numbers = pop[genotype]
+            fitness = get_fitness_alpha(genotype,time)
+            r.append(numbers * fitness)
+        weights = [x / sum(r) for x in r]
+        pop_size_t = np.sum([pop[i] for i in genotypes])
+        counts = list(np.random.multinomial(pop_size_t, weights)) # genetic drift
+        for (genotype, count) in zip(genotypes, counts):
+            if (count > 0):
+                pop[genotype] = count
+            else:
+                del pop[genotype]
+        return pop
+
+    # in every generation, it will mutate and then the genetic drift
+    # calculate several times to get the evolution trajectory
+    # At each step in the simulation, we append to a history object.
+    def simulate(pop,history):
+        clone_pop = dict(pop)
+        history.append(clone_pop)
+        for t in range(n_gen):
+            recombination_step(pop)
+            mutation_step(pop)
+            offspring_step(pop,t)
+            clone_pop = dict(pop)
+            history.append(clone_pop)
+        return history
+
+    # transfer output from alphabet to number
+    def get_sequence(genotype):
+        escape_states = []
+        for i in range(len(genotype)):
+            for k in range(q):
+                if genotype[i] == alphabet[k]:
+                    escape_states.append(str(k))
+        return escape_states
+
+    def initial_dis(pop,inital_state,pop_size):
+        n_seqs  = int(pop_size/inital_state)
+        for ss in range(inital_state):
+            sequences = ''
+            for i in range(seq_length):
+                temp_seq   = np.random.choice(np.arange(0, q), p=[0.8, 0.2])
+                allele_i   = alphabet[temp_seq]
+                sequences += allele_i
+            if ss != inital_state-1:
+                if sequences in pop:
+                    pop[sequences] += n_seqs
+                else:
+                    pop[sequences]  = n_seqs
+            else:
+                if sequences in pop:
+                    pop[sequences] += pop_size - (inital_state-1)*n_seqs
+                else:
+                    pop[sequences]  = pop_size - (inital_state-1)*n_seqs
+
+    ############################################################################
+    ############################## Simulate ####################################
+    pop = {}
+    pop["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"] = pop_size
+
+    history = []
+    simulate(pop,history)
+
+    # write the output file - dat format
+    f = open("%s/%s/sequences/%s.dat"%(SIM_DIR,xpath,xfile),'w')
+
+    for i in range(len(history)):
+        pop_at_t = history[i]
+        genotypes = pop_at_t.keys()
+        for genotype in genotypes:
+            time = i
+            counts = pop_at_t[genotype]
+            sequence = get_sequence(genotype)
+            f.write('%d\t%d\t' % (time,counts))
+            for j in range(len(sequence)):
+                f.write(' %s' % (' '.join(sequence[j])))
+            f.write('\n')
+    f.close()
 
 def run_mpl_binary(**pdata):
     """
