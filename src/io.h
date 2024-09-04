@@ -14,8 +14,9 @@
 
 // Input
 void getSequences(FILE *input, IntVVector &sequences, Vector &counts, std::vector<double> &times);
-void expandSequences(int q, IntVector &sequences);
+void expandSequences(int q, IntVVector &sequences);
 void getMu(FILE *input, Vector &mu);
+void getRVector(FILE *input, RVector &vec);
 void getTrait(FILE* input, IntVector &po);
 void getTraitnew(FILE* input, IntVVector &po);
 

@@ -459,7 +459,7 @@ def analyze_result(tag,verbose=True):
                 if polymorphic_index in traitsite[i]:
                     tc_MPL = sc[i+L*5]
         f.write('%d,%d,%s,%s,' % (polymorphic_index, alignment, HXB2_index, nucleotide))
-        f.write('%s,%s,%s,%s,%f,%f,%s' % (TF, consensus, epitope, escape, sc_mpl_old, sc_MPL,tc_MPL))
+        f.write('%s,%s,%s,%s,%s,%s,%s' % (TF, consensus, epitope, escape, sc_mpl_old, sc_MPL, tc_MPL))
         f.write(',%s' % (','.join([str(df_i[c]) for c in cols])))
         f.write('\n')
     f.close()
@@ -527,52 +527,52 @@ def modify_seq(tag,special_tags):
         mut_index = NUC.index(mut_alle)
         if tag != '700010077-3' and tag != '705010162-3':
             g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
             g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
             g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
         else:
             g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
             g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
             g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
 
-        f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
-        for j in range(len(seq)):
-            seq_modi  = seq[j]
-            poly_states = []
-            for ii in range(L):
-                if ii == trait_site and seq_modi[ii+2] == mut_index:
-                    poly_states.append(str(TF_seq[trait_site]))
-                else:
-                    poly_states.append(str(int(seq_modi[ii+2])))
-            f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
-        f.close()
+        # f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
+        # for j in range(len(seq)):
+        #     seq_modi  = seq[j]
+        #     poly_states = []
+        #     for ii in range(L):
+        #         if ii == trait_site and seq_modi[ii+2] == mut_index:
+        #             poly_states.append(str(TF_seq[trait_site]))
+        #         else:
+        #             poly_states.append(str(int(seq_modi[ii+2])))
+        #     f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
+        # f.close()
 
     for n in range(len(trait_sites)):
         variant   = 'epi'+str(int(n))
         
         if tag != '700010077-3' and tag != '705010162-3':
             g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
             g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
             g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
         else:
             g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -rr 1.4e-5 '%(tag,variant))
+            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
             g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
             g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
 
-        f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
-        for j in range(len(seq)):
-            seq_modi  = seq[j]
-            poly_states = []
-            for ii in range(L):
-                if ii in trait_sites[n]:
-                    poly_states.append(str(TF_seq[ii]))
-                else:
-                    poly_states.append(str(int(seq_modi[ii+2])))
-            f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
-        f.close()
+        # f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
+        # for j in range(len(seq)):
+        #     seq_modi  = seq[j]
+        #     poly_states = []
+        #     for ii in range(L):
+        #         if ii in trait_sites[n]:
+        #             poly_states.append(str(TF_seq[ii]))
+        #         else:
+        #             poly_states.append(str(int(seq_modi[ii+2])))
+        #     f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
+        # f.close()
 
     g.close()
 

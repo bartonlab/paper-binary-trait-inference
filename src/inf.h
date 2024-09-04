@@ -7,6 +7,7 @@
 
 
 // Typedefs
+typedef std::vector<double> RVector;
 typedef std::vector<std::vector<double> > Vector;
 typedef std::vector<std::vector<int> > IntVector;
 typedef std::vector<std::vector<std::vector<double> > > VVector;
@@ -23,6 +24,7 @@ public:
                                        // output will also be sent to this directory
     std::vector<std::string> infiles;  // input file list
     std::string muInfile;              // input file for mutation matrix
+    std::string RInfile;               // input file for recombination matrix
     std::string traitInfile;           // input file for trait site information
     std::string traitSequence;         // input file for trait sequence information
     std::string traitDis;              // input file for distance tween 2 trait sites
@@ -38,6 +40,7 @@ public:
     int q;                  // number of states for each allele
     
     bool useMatrix;         // if true, read mutation matrix from file
+    bool useVector;         // if true, read recombination rate vector from file
     bool useCovariance;     // if true, include covariance (linkage) information, else default to independent sites
     bool useAsymptotic;     // if true, assume that sequences are collected over long times (equilibrium)
     bool useVerbose;        // if true, print extra information while program is running
@@ -57,10 +60,11 @@ public:
         gamma  = 1.0e3;
         N      = 1.0e3;
         mu     = 2.0e-4;
-        rr     = 2.0e-4;
+        rr     = 1.4e-5;
         q      = 2;
         
         useMatrix      = false;
+        useVector      = false;
         useCovariance  = true;
         useAsymptotic  = false;
         useVerbose     = false;
@@ -71,6 +75,7 @@ public:
     std::string getSequenceInfile()              { return (directory+"/"+infiles[0]);   }
     std::string getSequenceInfile(int i)         { return (directory+"/"+infiles[i]);   }
     std::string getMuInfile()                    { return (directory+"/"+muInfile);     }
+    std::string getRInfile()                     { return (directory+"/"+RInfile);     }
     std::string getTraitInfile()                 { return (directory+"/"+traitInfile);  }
     std::string getTraitSInfile()                { return (directory+"/"+traitSequence);}
     std::string getTraitDInfile()                { return (directory+"/"+traitDis);     }
@@ -86,11 +91,11 @@ int run(RunParameters &r);
 
 // Auxiliary routines
 void computeAlleleFrequencies(const IntVector &sequences, const std::vector<double> &counts, const IntVector &trait_sites,const IntVector &trait_sequence,int q, std::vector<double> &p1, std::vector<double> &p2,std::vector<double> &pt);
-void computeRecFrequencies(const IntVector &sequences, const std::vector<double> &counts, const IntVector &trait_sites,const IntVector &trait_sequence,int q, std::vector<double> &pk);
+void computeRecFrequencies(const IntVector &sequences, const std::vector<double> &counts, const IntVector &trait_sites,const IntVector &trait_sequence, std::vector<double> &pk);
 void updateCovarianceIntegrate(double dg, const std::vector<double> &p1_0,const std::vector<double> &p2_0, const std::vector<double> &p1_1, const std::vector<double> &p2_1,double totalCov[]); 
 void updateMuIntegrate(double dg, int L, const Vector &muMatrix, const IntVector &trait_sites, const IntVector &trait_sequence, const std::vector<double> &p1_0, const std::vector<double> &pt_0, const std::vector<double> &p1_1, const std::vector<double> &pt_1, std::vector<double> &totalMu);
-void updateComIntegrate(double dg, int L, int q, double rec, const IntVector &trait_sites, const IntVector &trait_sequence, const IntVector &trait_dis, const std::vector<double> &p1_0, const std::vector<double> &pk_0, const std::vector<double> &p1_1, const std::vector<double> &pk_1, std::vector<double> &totalCom);
-void processStandard(const IntVVector &sequences, const Vector &counts, const std::vector<double> &times, const Vector &muMatrix, const IntVector &trait_sites,const IntVector &trait_sequence,const IntVector &trait_dis, int q, double r_rate, double totalCov[], double dx[]);
+void updateComIntegrate(double dg, int L, int q, double r_rate_0, double r_rate_1, const IntVector &trait_sites, const IntVector &trait_sequence, const IntVector &trait_dis, const std::vector<double> &p1_0, const std::vector<double> &pk_0, const std::vector<double> &p1_1, const std::vector<double> &pk_1, std::vector<double> &totalCom);
+void processStandard(const IntVVector &sequences, const Vector &counts, const std::vector<double> &times, const Vector &muMatrix, const RVector &r_rates, const IntVector &trait_sites,const IntVector &trait_sequence,const IntVector &trait_dis, int q, double totalCov[], double dx[]);
 void regularizeCovariance(const IntVVector &sequences, int ne, int q, double gammaN, double totalCov[]);
 
 #endif

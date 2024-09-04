@@ -274,7 +274,8 @@ void updateMuIntegrate(double dg, // time step
 void updateComIntegrate(double dg,                       // time step
                         int L,                           // sequence length
                         int q,                           // number of states (e.g., number of nucleotides or amino acids)
-                        double r_rate,                   // recombination rate
+                        double r_rate_0,                 // recombination rate
+                        double r_rate_1,                 // recombination rate
                         const IntVector &trait_sites,    // vector about escape information
                         const IntVector &trait_sequence, // vector about escape sequence information
                         const IntVector &trait_dis,      // vector about escape sequence information
@@ -299,7 +300,7 @@ void updateComIntegrate(double dg,                       // time step
             fluxOut += trait_dis[n][nn] * (pk_0[aa + 1] + pk_1[aa + 1]) * (pk_0[aa + 2] + pk_1[aa + 2])/4;
 
         }
-        totalCom[(L * q) + n] += dg * r_rate * (fluxIn - fluxOut);
+        totalCom[(L * q) + n] += dg * (r_rate_0 + r_rate_1) * (fluxIn - fluxOut)/2;
     }
 }
 
@@ -308,11 +309,11 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
                      const Vector &counts,             // vector of sequence counts
                      const std::vector<double> &times, // sequence sampling times
                      const Vector &muMatrix,           // matrix of mutation rates
+                     const RVector &r_rates,            // vector of recombination rates
                      const IntVector &trait_sites,     // matrix of escape sites
                      const IntVector &trait_sequence,  // vector about escape sequence information
                      const IntVector &trait_dis,       // vector about escape sequence information
                      int q,                            // number of states (e.g., number of nucleotides or amino acids)
-                     double r_rate,                    // recombination rate
                      double totalCov[],                // integrated covariance matrix
                      double dx[]                       // selection estimate numerator
                      ) {
@@ -343,7 +344,7 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
         computeRecFrequencies(sequences[k], counts[k], trait_sites, trait_sequence,pk);
         updateCovarianceIntegrate(times[k] - times[k-1], lastp1, lastp2, p1, p2, totalCov);
         updateMuIntegrate(times[k] - times[k-1], L, muMatrix, trait_sites, trait_sequence, lastp1, lastpt, p1, pt, totalMu);
-        updateComIntegrate(times[k] - times[k-1], L, q, r_rate, trait_sites, trait_sequence, trait_dis, lastp1, lastpk, p1, pk, totalCom);
+        updateComIntegrate(times[k] - times[k-1], L, q, r_rates[k-1], r_rates[k], trait_sites, trait_sequence, trait_dis, lastp1, lastpk, p1, pk, totalCom);
 
         if (k==sequences.size()-1) { for (int a=0;a<LL;a++) dx[a] += p1[a]; }// dx += x[t_K]
 
@@ -412,6 +413,20 @@ int run(RunParameters &r) {
 
     }
 
+    // Recombination rate over time
+    RVector r_rates; 
+    if (r.useVector) { // from input file to get the recombination vector
+
+        if (FILE *rin = fopen(r.getRInfile().c_str(),"r")) { getRVector(rin, r_rates); fclose(rin);}
+        else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getRInfile().c_str()); return EXIT_FAILURE; }
+
+    }
+    else { // no input file, use constant recombination rate to get the recombination vector
+
+        r_rates.resize(times.size(), r.rr);
+
+    }
+
     // TRAIT INFORMATION (trait sites, TF trait sequences, distance between 2 trait sites)
     IntVector trait_sites; // trait sites
     if (FILE *poin = fopen(r.getTraitInfile().c_str(),"r"))  { getTrait(poin, trait_sites); fclose(poin);}
@@ -431,7 +446,6 @@ int run(RunParameters &r) {
     int    LL        =  L * r.q + ne;                           // length of allele frequency vector
     double tol       = r.tol;                                   // tolerance for changes in covariance between time points
     double gamma     = r.gamma;                                 // regularization strength for individual locus
-    double r_rate    = r.rr;                                    // recombination rate
     double *dx       = new double[LL];                          // difference between start and end allele frequencies
     double *totalCov = new double[LL*LL];                       // accumulated allele covariance matrix
 
@@ -441,7 +455,7 @@ int run(RunParameters &r) {
     // _ START TIMER
     // auto t_start = Clock::now();
 
-    processStandard(sequences, counts, times, muMatrix, trait_sites, trait_sequence, trait_dis, r.q, r.rr, totalCov, dx);
+    processStandard(sequences, counts, times, muMatrix, r_rates, trait_sites, trait_sequence, trait_dis, r.q, totalCov, dx);
 
     // If there is more than one input trajectory, loop through all of them and add contributions
     // NOTE: CURRENT CODE ASSUMES THAT ALL VALUES OF N ARE EQUAL
@@ -457,7 +471,7 @@ int run(RunParameters &r) {
         else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getSequenceInfile().c_str()); return EXIT_FAILURE; }
 
         // Add contributions to dx and totalCov
-        processStandard(sequences, counts, times, muMatrix, trait_sites, trait_sequence, trait_dis, r.q, r.rr, totalCov, dx);
+        processStandard(sequences, counts, times, muMatrix, r_rates, trait_sites, trait_sequence, trait_dis, r.q, totalCov, dx);
 
     } }
 

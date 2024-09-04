@@ -2961,13 +2961,14 @@ def plot_example_tv(**pdata):
     n_del    = pdata['n_del']
     n_tra    = pdata['n_tra']
     s_ben    = pdata['s_ben']
+    s_neu    = pdata['s_neu']
     s_del    = pdata['s_del']
     s_tra    = pdata['s_tra']
+    s_t_a    = pdata['s_t_a']
 
     r_seed = pdata['r_seed']
     np.random.seed(r_seed)
 
-    show_fig = pdata['show_fig']
     # load and process data files
 
     data  = np.loadtxt('%s/%s/sequences/example-%s.dat' % (SIM_DIR, xpath, xfile))
@@ -3011,26 +3012,46 @@ def plot_example_tv(**pdata):
     cov     = np.loadtxt('%s/%s/covariance/covariance-%s.dat' %(SIM_DIR,xpath,x_index))
     ds      = np.linalg.inv(cov) / pop_size
 
+    ### distribution of inferred selection coefficients for multiple simulaitons
+
+    df       = pd.read_csv('%s/mpl_collected_tv.csv' % SIM_DIR, memory_map=True)
+
+    ben_cols = ['sc_%d' % i for i in range(n_ben)]
+    neu_cols = ['sc_%d' % i for i in range(n_ben, n_ben+n_neu)]
+    del_cols = ['sc_%d' % i for i in range(n_ben+n_neu, n_ben+n_neu+n_del)]
+    tra_cols = ['tc_%d' % i for i in range(n_tra)]
+
+    colors     = [C_BEN, C_NEU, C_DEL]
+    tags_tv    = ['beneficial', 'neutral', 'deleterious', 'trait']
+    cols_tv    = [ben_cols, neu_cols, del_cols, tra_cols]
+    s_true_loc = [s_ben, s_neu, s_del, s_t_a]
+
     # PLOT FIGURE
     ## set up figure grid
     w     = DOUBLE_COLUMN
-    goldh = w/2.5
+    goldh = w/1.5
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
-    box_tra1 = dict(left=0.10, right=0.48, bottom=0.55, top=0.98)
-    box_tra2 = dict(left=0.58, right=0.96, bottom=0.55, top=0.98)
-    box_coe1 = dict(left=0.10, right=0.48, bottom=0.05, top=0.42)
-    box_coe2 = dict(left=0.58, right=0.96, bottom=0.15, top=0.42)
+    box_tra1 = dict(left=0.10, right=0.48, bottom=0.72, top=0.98)
+    box_tra2 = dict(left=0.58, right=0.96, bottom=0.72, top=0.98)
+    box_coe1 = dict(left=0.10, right=0.48, bottom=0.37, top=0.63)
+    box_coe2 = dict(left=0.58, right=0.96, bottom=0.42, top=0.63)
+    box_dis1 = dict(left=0.10, right=0.48, bottom=0.07, top=0.30)
+    box_dis2 = dict(left=0.58, right=0.96, bottom=0.07, top=0.30)
 
     gs_tra1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra1)
     gs_tra2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tra2)
     gs_coe1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe1)
     gs_coe2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coe2)
+    gs_dis1 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_dis1)
+    gs_dis2 = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_dis2)
 
     ax_tra1 = plt.subplot(gs_tra1[0, 0])
     ax_tra2 = plt.subplot(gs_tra2[0, 0])
     ax_coe1 = plt.subplot(gs_coe1[0, 0])
     ax_coe2 = plt.subplot(gs_coe2[0, 0])
+    ax_dis1 = plt.subplot(gs_dis1[0, 0])
+    ax_dis2 = plt.subplot(gs_dis2[0, 0])
 
     dx = -0.04
     dy = -0.02
@@ -3206,13 +3227,58 @@ def plot_example_tv(**pdata):
 
     ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
+    # e -- distribution of inferred selection coefficients for individual loci
+    dashlineprops = { 'lw' : SIZELINE * 1.5, 'ls' : ':', 'alpha' : 0.5, 'color' : BKCOLOR }
+    histprops = dict(histtype='bar', lw=SIZELINE/2, rwidth=0.8, ls='solid', alpha=0.6, edgecolor='none')
+    tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+
+    pprops = { 'xlim'     : [ -0.06,  0.06],
+            'xticks'      : [ -0.06, -0.04, -0.02,    0.,  0.02,  0.04,  0.06],
+            'xticklabels' : [    -6,    -4,    -2,     0,     2,     4,     6],
+            'ylim'        : [0., 0.10],
+            'yticks'      : [0., 0.05, 0.10],
+            'xlabel'      : 'Inferred selection coefficient, ' + r'$\hat{s}$' + ' (%)',
+            'ylabel'      : 'Frequency',
+            'bins'        : np.arange(-0.06, 0.06, 0.001),
+            'combine'     : True,
+            'plotprops'   : histprops,
+            'axoffset'    : 0.1,
+            'theme'       : 'boxed' }
+
+    for i in range(len(tags_tv)-1):
+        x = [np.array(df[cols_tv[i]]).flatten()]
+        ax_dis1.text(s_true_loc[i], 0.106, r'$s_{%s}$' % (tags_tv[i]), color=colors[i], **tprops)
+        ax_dis1.axvline(x=s_true_loc[i], **dashlineprops)
+        if i<len(tags_tv)-2: mp.hist(             ax=ax_dis1, x=x, colors=[colors[i]], **pprops)
+        else:                mp.plot(type='hist', ax=ax_dis1, x=x, colors=[colors[i]], **pprops)
+
+    ax_dis1.text(  box_dis1['left']+dx,  box_dis1['top']+0.04, 'e'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # f -- distribution of inferred selection coefficients for binary traits
+    pprops = { 'xlim'        : [   0, 0.12],
+               'xticks'      : [   0, 0.04, 0.08, 0.12],
+               'xticklabels' : [   0,    4,    8,   12],
+               'ylim'        : [0., 0.15],
+               'yticks'      : [0., 0.05, 0.10, 0.15],
+               'xlabel'      : 'Inferred trait coefficient, ' + r'$\hat{s}$' + ' (%)',
+               'ylabel'      : 'Frequency',
+               'bins'        : np.arange(0, 0.12, 0.003),
+               'plotprops'   : histprops,
+               'axoffset'    : 0.1,
+               'theme'       : 'boxed' }
+
+    ax_dis2.text(s_true_loc[3], 0.159, r'$s_{%s}$' % (tags_tv[3]), color=BKCOLOR, **tprops)
+    ax_dis2.axvline(x=s_true_loc[3], **dashlineprops)
+    
+    for i in range(n_tra):
+        x = [np.array(df[cols_tv[3][i]]).flatten()]
+        mp.plot(type='hist', ax=ax_dis2, x=x, colors=[c_coe2[i]], **pprops)
+
+    ax_dis2.text( box_dis2['left']+dx, box_dis2['top']+0.04, 'f'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
     # SAVE FIGURE
-    if show_fig:
-        plt.savefig('%s/sufig-sim-tv.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-        print('Figure saved as sufig-sim-tv.pdf')
-    else:
-        plt.savefig('%s/tv/%s.pdf' % (FIG_DIR,x_index), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-        plt.close()
+    plt.savefig('%s/sufig-sim-tv.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as sufig-sim-tv.pdf')
 
 
 def plot_different_r(**pdata):
@@ -3230,13 +3296,13 @@ def plot_different_r(**pdata):
     var_tc = [[] for _ in range(len(r_rates))]
     
     for tag in tags:
-        df_poly = pd.read_csv('%s/analysis/%s-analyze-R.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+        df_poly = pd.read_csv('%s/rx/different r/%s-analyze-R.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
         for df_iter, df_entry in df_poly.iterrows():
             if df_entry.sc_MPL != 0 and df_entry.nucleotide != '-':
                 for j in range(len(r_rates)):
                     var_sc[j].append(df_entry['sc_%d' %j])
 
-        df_trait    = pd.read_csv('%s/group/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        df_trait    = pd.read_csv('%s/rx/different r/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
         var_tc_0    = 0
         for df_iter, df_entry in df_trait.iterrows():
             if pd.isna(df_entry.tc_MPL) ==  False:
@@ -3273,9 +3339,11 @@ def plot_different_r(**pdata):
 
     dx = -0.05
     dy =  0.04
-
-    cmap = plt.get_cmap('tab20')
-    colors = [cmap(i) for i in range(len(r_rates)-2)]
+    
+    colors = []
+    lights = np.linspace(0.2,0.8,len(r_rates)-2)
+    for i in range(len(r_rates)-2):
+        colors.append(hls_to_rgb(0.58, lights[i], 0.60))
 
     ## a -- inferred selection coefficients with VS. without binary trait term
     lineprops   = { 'lw' : SIZELINE, 'linestyle' : '-', 'alpha' : 0.8}
@@ -3353,8 +3421,8 @@ def plot_different_r(**pdata):
             mp.line(             ax=ax_label, x=[[1,3]], y=[[yy_i, yy_i]], colors=[colors[i]],plotprops=lineprops, **pprops)
 
     # SAVE FIGURE
-    plt.savefig('%s/sufig-different-r.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('Figure saved as sufig-different-r.pdf')
+    plt.savefig('%s/rxfig-different-r.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as rxfig-different-r.pdf')
 
 
 def plot_different_r_tc(**pdata):
@@ -3372,7 +3440,7 @@ def plot_different_r_tc(**pdata):
     var_tc = [[] for _ in range(len(r_rates))]
     
     for tag in tags:
-        df_trait    = pd.read_csv('%s/group/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+        df_trait    = pd.read_csv('%s/rx/different r/escape_group-R-%s.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
         var_tc_0    = 0
         for df_iter, df_entry in df_trait.iterrows():
             if pd.isna(df_entry.tc_MPL) ==  False:
@@ -3401,8 +3469,10 @@ def plot_different_r_tc(**pdata):
     dx = -0.05
     dy =  0.04
 
-    cmap = plt.get_cmap('tab20')
-    colors = [cmap(i) for i in range(len(r_rates))]
+    colors = []
+    lights = np.linspace(0.2,0.8,len(r_rates))
+    for i in range(len(r_rates)):
+        colors.append(hls_to_rgb(0.58, lights[i], 0.60))
 
     ## a -- distribution of inferred trait coefficients with different recombination rates
 
@@ -3426,8 +3496,6 @@ def plot_different_r_tc(**pdata):
             mp.plot(type='scatter', ax=ax_tc, x=[var_tc[index]], y=[var_tc[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
         else:
             mp.scatter(             ax=ax_tc, x=[var_tc[index]], y=[var_tc[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
-        
-    ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # b -- label
     pprops = { 'xlim':         [ 0, 10],
@@ -3450,8 +3518,8 @@ def plot_different_r_tc(**pdata):
             mp.scatter(             ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
 
     # SAVE FIGURE
-    plt.savefig('%s/sufig-different-r-tc.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('Figure saved as sufig-different-r-tc.pdf')
+    plt.savefig('%s/rxfig-different-r-tc.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as rxfig-different-r-tc.pdf')
  
 
 def plot_virus_load(**pdata):
@@ -3467,8 +3535,6 @@ def plot_virus_load(**pdata):
             times.append(seq[i][0])
         return np.unique(times)
 
-    interpolation = lambda a,b: sp_interpolate.interp1d(a,b,kind='linear',fill_value=(0,0), bounds_error=False)
-
     times_all = []
     vl_all    = []
 
@@ -3478,16 +3544,21 @@ def plot_virus_load(**pdata):
     for i in range(len(tags)):
         tag = tags[i]
         ppt = tag[:9]
-        df_vl    = pd.read_csv('%s/virus load/%s.csv' %(HIV_DIR,ppt), header=None)
 
-        df_vl.columns = ['time', 'virus_load']
+        df_vl_raw    = pd.read_csv('%s/virus load/%s.csv' %(HIV_DIR,ppt), header=None)
+        df_vl_raw.columns = ['time', 'virus_load']
+        df_vl = df_vl_raw.sort_values(by='time', ascending=True)
 
         sample_times = get_times(tag)
 
         times = [int(i) for i in df_vl['time'].values]
-        virus_load = [i for i in df_vl['virus_load'].values]
+        virus_load = [np.power(10, i) for i in df_vl['virus_load'].values]
 
-        whole_time = np.linspace(int(times[0]),int(times[-1]),int(times[-1]-times[0]+1))
+        time_min = np.min([int(times[0]),sample_times[0]])
+        time_max = np.max([int(times[-1]),sample_times[-1]])
+        whole_time = np.linspace(time_min,time_max,int(time_max-time_min+1))
+
+        interpolation = lambda a,b: sp_interpolate.interp1d(a,b,kind='linear',fill_value=(virus_load[0], virus_load[-1]), bounds_error=False)
         AllVL = interpolation(times, virus_load)(whole_time)
 
         for t in sample_times:
@@ -3520,31 +3591,48 @@ def plot_virus_load(**pdata):
     dx = -0.05
     dy =  0.04
 
-    cmap = plt.get_cmap('tab20')
-    colors = [cmap(i) for i in range(len(tags))]
+    # colors = []
+    # lights = np.linspace(0.2,0.8,len(tags))
+    # for i in range(len(tags)):
+    #     colors.append(hls_to_rgb(0.58, lights[i], 0.60))
 
+    colors = sns.color_palette("husl", len(tags))
     ## a -- distribution of inferred trait coefficients with different recombination rates
 
     scatterprops = dict(lw=0, s=SMALLSIZEDOT*0.6, marker='o', alpha=1.0, clip_on=False)
     lineprops   = { 'lw' : SIZELINE, 'linestyle' : ':', 'alpha' : 0.6}
-    
-    pprops = { 'xlim':         [0,350],
-               'ylim':         [3,7],
-               'xticks':       [0,100,200,300],
-               'yticks':       [3,4,5,6,7],
+    fillprops = { 'lw': 0, 'alpha': 0.15, 'interpolate': True, 'step': 'mid' }
+
+    pprops = { 'xlim':         [0,800],
+               'ylim':         [1,7],
+               'xticks':       [0,200,400,600,800],
+               'yticks':       [1,2,3,4,5,6,7],
+               'yticklabels':  [r'$10^{1}$',r'$10^{2}$',r'$10^{3}$',r'$10^{4}$',r'$10^{5}$',r'$10^{6}$',r'$10^{7}$'],
                'xlabel':       'Time (days) ',
-               'ylabel':       'log10 viral load',
+               'ylabel':       'viral load (copies/ml)',
                'theme':        'boxed'}
 
     for i in range(len(tags)):
-        mp.plot(type='line', ax=ax_tc, x=[times_all[i]], y=[vl_all[i]], colors=[colors[i]],plotprops=lineprops, **pprops)
+        vl_i = np.log10(vl_all[i])
+        mp.line(ax=ax_tc, x=[times_all[i]], y=[vl_i], colors=[colors[i]],plotprops=lineprops, **pprops)
     
     for i in range(len(tags)):
+        vl_sample_i = np.log10(vl_sample_all[i])
         if i == len(tags)-1:
-            mp.plot(type='scatter', ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_all[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+            mp.plot(type='scatter', ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_i], colors=[colors[i]],plotprops=scatterprops, **pprops)
         else:
-            mp.scatter(             ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_all[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
-        
+            mp.scatter(             ax=ax_tc, x=[times_sample_all[i]], y=[vl_sample_i], colors=[colors[i]],plotprops=scatterprops, **pprops)
+    
+    # x_tc = [0,800,800,0]
+    # y_tc = [np.log10(100),np.log10(26800),np.log10(82000),np.log10(165500),np.log10(10000000)]
+    # c_tc = ['#0000FF','#808080','#FFFF00','#FFA500']
+    # for i in range(len(y_tc)-2):
+    #     y_tc_i = [y_tc[i],y_tc[i],y_tc[i+1],y_tc[i+1]]
+    #     mp.fill(ax=ax_tc, x=[x_tc], y=[y_tc_i], colors=[c_tc[i]],plotprops=fillprops, **pprops)
+
+    # y_tc_i = [y_tc[-2],y_tc[-2],y_tc[-1],y_tc[-1]]
+    # mp.plot(type='fill',ax=ax_tc, x=[x_tc], y=[y_tc_i], colors=[c_tc[-1]],plotprops=fillprops, **pprops)
+
     ax_tc.text(box_tc['left']+dx, box_tc['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # b -- label
@@ -3568,7 +3656,145 @@ def plot_virus_load(**pdata):
             mp.scatter(             ax=ax_label, x=[[2]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
 
     # SAVE FIGURE
-    plt.savefig('%s/sufig-vl.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
-    print('Figure saved as sufig-vl.pdf')
+    plt.savefig('%s/rxfig-vl.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    print('Figure saved as rxfig-vl.pdf')
  
- 
+def plot_sc_with_VL_r(**pdata):
+
+    # unpack data
+
+    tags    = pdata['tags']
+    
+    var_sc     = [[] for _ in range(len(tags))]
+    var_sc_new = [[] for _ in range(len(tags))]
+    var_tc     = [[] for _ in range(len(tags))]
+    var_tc_new = [[] for _ in range(len(tags))]
+
+    # process stored data
+    for i in range(len(tags)):
+        tag = tags[i]
+        df_sc = pd.read_csv('%s/rx/constant r/%s-analyze.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+
+        tc_tag = -0.1
+        for ii in range(len(df_sc)):
+            if df_sc.iloc[ii].sc_MPL != 0 and df_sc.iloc[ii].nucleotide != '-':
+                var_sc[i].append(df_sc.loc[ii,'sc_cR'])
+                var_sc_new[i].append(df_sc.loc[ii,'sc_MPL'])
+
+            if pd.isna(df_sc.loc[ii,'tc_MPL']) == False and df_sc.loc[ii,'tc_MPL'] != tc_tag:
+                var_tc[i].append(df_sc.loc[ii,'tc_cR'])
+                var_tc_new[i].append(df_sc.loc[ii,'tc_MPL'])
+                tc_tag = df_sc.loc[ii,'tc_MPL']
+
+    # PLOT FIGURE
+
+    ## set up figure grid
+
+    w     = DOUBLE_COLUMN
+    goldh = w/1.6
+    fig   = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_sc = dict(left=0.07, right=0.57, bottom=0.10, top=0.90)
+    box_tc = dict(left=0.65, right=0.95, bottom=0.10, top=0.58)
+    box_la = dict(left=0.62, right=0.95, bottom=0.60, top=0.90)
+    
+    gs_sc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_sc)
+    gs_tc = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_tc)
+    gs_la = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_la)
+
+    ax_sc = plt.subplot(gs_sc[0, 0])
+    ax_tc = plt.subplot(gs_tc[0, 0])
+    ax_la = plt.subplot(gs_la[0, 0])
+
+    dx = -0.05
+    dy =  0.04
+
+    dx = -0.05
+    dy =  0.04
+
+    colors = sns.color_palette("husl", len(tags))
+
+    ## a -- inferred selection coefficients with constant r VS. VL-dependent r
+
+    s_min = -0.06
+    s_max =  0.08
+    scatterprops = dict(lw=0, s=SMALLSIZEDOT*0.6, marker='o', alpha=0.6)
+    lineprops   = { 'lw' : SIZELINE, 'linestyle' : ':', 'alpha' : 0.6}
+
+    pprops = { 'xlim':         [ s_min, s_max],
+               'ylim':         [ s_min, s_max],
+               'xticks':       [ -0.06, -0.04, -0.02,   0,  0.02,  0.04,  0.06,  0.08],
+               'yticks':       [ -0.06, -0.04, -0.02,   0,  0.02,  0.04,  0.06,  0.08],
+               'xticklabels':  [ -6, -4, -2, 0, 2, 4, 6, 8],
+               'yticklabels':  [ -6, -4, -2, 0, 2, 4, 6, 8],
+               'xlabel':       'Inferred selection coefficients with constant r',
+               'ylabel':       'Inferred selection coefficients with VL-dependent r',
+               'theme':        'boxed'}
+
+    mp.line(ax=ax_sc, x=[[s_min, s_max]], y=[[s_min,s_max]], colors=[C_NEU],plotprops=lineprops, **pprops)
+
+    
+    for i in range(len(var_sc)):
+        if i == len(var_sc)-1:
+            mp.plot(type='scatter', ax=ax_sc, x=[var_sc[i]], y=[var_sc_new[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:  
+            mp.scatter(             ax=ax_sc, x=[var_sc[i]], y=[var_sc_new[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+
+    ## b -- inferred selection coefficients with VS. without binary trait term
+
+    s_min = -0.05
+    s_max =  0.30
+    scatterprops = dict(lw=0, s=SMALLSIZEDOT*0.6, marker='o', alpha=0.6)
+    lineprops   = { 'lw' : SIZELINE, 'linestyle' : ':', 'alpha' : 0.6}
+
+    pprops = { 'xlim':         [ s_min, s_max],
+               'ylim':         [ s_min, s_max],
+               'xticks':       [ -0.05,   0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
+               'yticks':       [ -0.05,   0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
+               'xticklabels':  [ -5,  0,  5,  10,  15,  20, 25, 30],
+               'yticklabels':  [ -5,  0,  5,  10,  15,  20, 25, 30],
+               'xlabel':       'Inferred trait coefficients with constant r',
+               'ylabel':       'Inferred trait coefficients with VL-dependent r',
+               'theme':        'boxed'}
+
+    mp.line(ax=ax_tc, x=[[s_min, s_max]], y=[[s_min,s_max]], colors=[C_NEU],plotprops=lineprops, **pprops)
+    
+    for i in range(len(var_tc)):
+        if i == len(var_tc)-1:
+            mp.plot(type='scatter', ax=ax_tc, x=[var_tc[i]], y=[var_tc_new[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:  
+            mp.scatter(             ax=ax_tc, x=[var_tc[i]], y=[var_tc_new[i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+
+    ## c -- label
+    pprops = { 'xlim':         [ 0, 10],
+               'ylim':         [ 0, 10],
+               'xticks':       [],
+               'yticks':       [],
+               'xlabel':       '',
+               'ylabel':       '',
+               'theme':       'open',
+               'hide':        ['bottom','left']}
+
+    for i in range(len(tags)):
+        
+        if i%3 == 0:
+            yy_i = 8 - 1.2 * i / 3
+            xx_i = 1
+        elif i%3 == 1:
+            yy_i = 8 - 1.2 * (i - 1) / 3
+            xx_i = 4
+        else:
+            yy_i = 8 - 1.2 * (i - 2) / 3
+            xx_i = 7
+
+        if i == (len(tags) - 1):
+            ax_la.text(xx_i, yy_i, '%s' % tags[i], ha='left', va='center', **DEF_LABELPROPS)
+            mp.plot(type='scatter', ax=ax_la, x=[[xx_i-0.3]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+        else:
+            ax_la.text(xx_i, yy_i, '%s' % tags[i], ha='left', va='center', **DEF_LABELPROPS)
+            mp.scatter(ax=ax_la, x=[[xx_i-0.3]], y=[[yy_i]], colors=[colors[i]],plotprops=scatterprops, **pprops)
+
+    # SAVE FIGURE
+    plt.savefig('%s/rxfig-HIV-r-VL.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
+    plt.show()
+    print('Figure saved as rxfig-HIV-r-VL.pdf')

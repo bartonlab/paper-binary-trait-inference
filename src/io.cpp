@@ -99,17 +99,17 @@ void getMu(FILE *input, Vector &mu) {
     int i;
     double d;
     
-    while (fscanf(input,"%lf",&d)==1) {
+    while (fscanf(input,"%lf",&d)==1) {// Read the first row
 
         mu.push_back(std::vector<double>());
-        mu.back().push_back(d);
+        mu.back().push_back(d); // Add the number to the this row
         
-        while (fscanf(input,"%c",&c)==1) {
+        while (fscanf(input,"%c",&c)==1) {// Check for newline or other separators
     
-            if (c=='\n' || c=='\r') break;
+            if (c=='\n' || c=='\r') break;// End of the row
             
-            fscanf(input,"%lf",&d);
-            mu.back().push_back(d);
+            fscanf(input,"%lf",&d); // Read the next row
+            mu.back().push_back(d); 
             
         }
         
@@ -126,6 +126,34 @@ void getMu(FILE *input, Vector &mu) {
     }
     
 }
+
+// Retrieve a row vector for recombination rate over time from a file
+void getRVector(FILE *input, RVector &vec) {
+
+    char c;
+    double d;
+    
+    while (fscanf(input, "%lf", &d) == 1) {// Read the first row
+
+        vec.push_back(d); // Add the number to the this row
+        
+        while (fscanf(input,"%c",&c)==1) {// Check for newline or other separators
+    
+            if (c=='\n' || c=='\r') break;// End of the row
+            
+            fscanf(input,"%lf",&d); // Read the next row
+            vec.push_back(d); 
+            
+        }
+        
+    }
+    
+    // sanity check
+    
+    assert(!vec.empty() && "io.cpp - getVector: read in empty vector");
+    
+}
+
 
 // Get trait site information (sites, TF sequence, distance between 2 trait sites)
 void getTrait(FILE* input, IntVector& po) {

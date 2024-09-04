@@ -15,10 +15,9 @@ src/mpl
 # Unnecessary files 
 newtry.ipynb
 try.py
-reply.ipynb
 figures/sim/
 figures/tv
-figures/tv1
+figures/rx*
 
 
 # Large files
@@ -29,5 +28,5 @@ data/HIV/raw/
 *.tar.gz
 
 data/simulation/time-varying not 0
-data/HIV/virus load
-data/HIV/outputR
+data/HIV/rx
+src/rx*

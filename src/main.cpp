@@ -48,6 +48,10 @@
     the case of a model with multiple states. If used, then the
     number of states q will be set by the dimensions of the matrix.
 
+ -r: string
+    Default: "R.dat"
+    The location of the file containing the recombination rate vector.
+
  -e: string
     Default: "po.dat"
     The location of the file containing the trait site information, 
@@ -81,8 +85,8 @@
     Mutation rate per generation.
 
  -rr: real number
-    Default: 2.0e-4
-    recombination rate per generation.
+    Default: 1.4e-5
+    Recombination rate per generation.
 
  -q: integer
     Default: 2
@@ -116,6 +120,7 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i],"-i")==0)  { if (++i==argc) break; else r.infiles.push_back(argv[i]);               }// input file name
         else if (strcmp(argv[i],"-o")==0)  { if (++i==argc) break; else r.outfile    = argv[i];                     }// output file name
         else if (strcmp(argv[i],"-m")==0)  { if (++i==argc) break; else { r.muInfile = argv[i]; r.useMatrix=true; } }// mutation matrix
+        else if (strcmp(argv[i],"-r")==0)  { if (++i==argc) break; else { r.RInfile = argv[i]; r.useVector=true;  } }// recombination rate
         else if (strcmp(argv[i],"-e")==0)  { if (++i==argc) break; else r.traitInfile = argv[i];                    }// trait sites
         else if (strcmp(argv[i],"-es")==0) { if (++i==argc) break; else r.traitSequence = argv[i];                  }// WT sequences for trait groups
         else if (strcmp(argv[i],"-ed")==0) { if (++i==argc) break; else r.traitDis = argv[i];                       }// distance between 2 trait sites
