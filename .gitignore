@@ -24,9 +24,8 @@ figures/rx*
 data/simulation/jobs/
 data/HIV/input/sequence/7*/
 data/HIV/output/7*/
-data/HIV/raw/
-*.tar.gz
-
-data/simulation/time-varying not 0
+data/simulation/time-varying
 data/HIV/rx
 src/rx*
+
+*.tar.gz

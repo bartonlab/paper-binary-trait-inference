@@ -16,6 +16,7 @@ import seaborn as sns
 
 from colorsys import hls_to_rgb
 from dataclasses import dataclass
+from typing import List
 
 import mplot as mp
 import re
@@ -559,7 +560,7 @@ def plot_histogram_sim(**pdata):
                'theme'       : 'boxed' }
     tprops = dict(ha='center', va='center', family=FONTFAMILY, size=SIZELABEL, clip_on=False)
 
-    ax_aur1.pcolor(AUC_matrix_ben.T, vmin=0.75, vmax=1.0, colors='GnBu', alpha=0.75)
+    ax_aur1.pcolor(AUC_matrix_ben.T, vmin=0.75, vmax=1.0, cmap='GnBu', alpha=0.75)
     for i in range(len(AUC_matrix_ben)):
         for j in range(len(AUC_matrix_ben[0])):
             tc = 'k'
@@ -567,7 +568,7 @@ def plot_histogram_sim(**pdata):
             ax_aur1.text(i+0.5, j+0.5, '%.2f' % (AUC_matrix_ben[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_aur1, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
-    ax_aur2.pcolor(AUC_matrix_del.T, vmin=0.75, vmax=1.0, colors='GnBu', alpha=0.75)
+    ax_aur2.pcolor(AUC_matrix_del.T, vmin=0.75, vmax=1.0, cmap='GnBu', alpha=0.75)
     for i in range(len(AUC_matrix_del)):
         for j in range(len(AUC_matrix_del[0])):
             tc = 'k'
@@ -575,7 +576,7 @@ def plot_histogram_sim(**pdata):
             ax_aur2.text(i+0.5, j+0.5, '%.2f' % (AUC_matrix_del[i,j]), color=tc, **tprops)
     mp.plot(type='scatter', ax=ax_aur2, x=[[-1]], y=[[-1]], colors=[BKCOLOR], **pprops)
 
-    ax_erro.pcolor(err_matrix_tra.T, vmin=0.2, vmax=0.8, colors='GnBu', alpha=0.75)
+    ax_erro.pcolor(err_matrix_tra.T, vmin=0.2, vmax=0.8, cmap='GnBu', alpha=0.75)
     for i in range(len(err_matrix_tra)):
         for j in range(len(err_matrix_tra[0])):
             tc = 'k'
@@ -866,7 +867,7 @@ def plot_histogram_fraction_HIV(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'yticklabels': [0, 1],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Fitness gain fraction \ndue to escape',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
@@ -995,7 +996,7 @@ def plot_CH470_3(**pdata):
                'ylim':        [0, 0.33],
                'yminorticks': [0.25, 0.5, 0.75],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Variant frequency',
                'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
                'axoffset':    0.1,
@@ -1142,7 +1143,7 @@ def plot_CH131_3(**pdata):
                'yticks':      [0, 1.0],
                'yminorticks': [0.25, 0.5, 0.75],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Variant frequency\nin EV11 epitope\n',
                'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
                'axoffset':    0.1,
@@ -1405,7 +1406,7 @@ def plot_CH470_5(**pdata):
                'yticks':      [0, 1.0],
                'yminorticks': [0.25, 0.5, 0.75],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Variant frequency',
                'plotprops':   {'lw': SIZELINE, 'ls': '-'},
                'axoffset':    0.1,
@@ -1597,7 +1598,7 @@ def plotReversionFaction(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'yticklabels': [0, 1],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Fitness gain fraction \ndue to reversions',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
@@ -1642,12 +1643,12 @@ def plotReversionFaction(**pdata):
 
 @dataclass
 class Result:
-    variants: 0
-    seq_length: 0
-    special_sites: []
-    uniq_t:[]
-    escape_group:[]
-    escape_TF:[]
+    variants: int
+    seq_length: int
+    special_sites: List[int]
+    uniq_t: List[float]
+    escape_group: List[int]
+    escape_TF: List[bool]
 
 def AnalyzeData(tag):
     df_info = pd.read_csv('data/HIV/analysis/%s-analyze.csv' %tag, comment='#', memory_map=True)
@@ -1929,7 +1930,7 @@ def plot_single_fraction(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'yticklabels': [0, 1],
                'nudgey':      1.1,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Fitness gain fraction', # \ndue to escape (CH-%s)'%ppt[-3:],
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
                'axoffset':    0.1,
@@ -2220,7 +2221,7 @@ def plot_sum_fraction(**pdata):
                'yminorticks': [0.25, 0.5, 0.75],
                'yticklabels': [0, 1],
                'nudgey':      1.0,
-               'xlabel':      'Time (days)',
+               'xlabel':      'Days after Fiebig I/II',
                'ylabel':      'Fitness gain fraction', # \ndue to escape trait',
                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.3},
                'axoffset':    0.1,
@@ -2535,7 +2536,7 @@ def get_participation_ratio(tag):
 #                'yminorticks': [0.25, 0.5, 0.75],
 #                'yticklabels': [0, 1],
 #                'nudgey':      1.1,
-#                'xlabel':      'Time (days)',
+#                'xlabel':      'Days after Fiebig I/II',
 #                'ylabel':      'Participation ratio', # \sum (\frac{x_i s_i}{\Delta f})^2
 #                'plotprops':   {'lw': SIZELINE, 'ls': '-','alpha':0.5},
 #                'axoffset':    0.1,
