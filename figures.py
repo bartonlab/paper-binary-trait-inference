@@ -408,7 +408,7 @@ def plot_example_mpl(**pdata):
     ax_fit.imshow(img, extent=[x_min, x_max, y_min, y_max])
 
     # adjust the x-axis range to make the image fit the left side of the figure
-    ax_fit.set_xlim(0, width*1.5)  # the image fit the left side of the figure
+    ax_fit.set_xlim(0, width*1.6)  # the image fit the left side of the figure
     ax_fit.set_ylim(-height / 2, height / 2)  # the image fit the middle side of the figure
 
     # close the axis
