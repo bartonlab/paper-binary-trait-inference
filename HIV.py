@@ -6,6 +6,8 @@ import pandas as pd
 import re
 import urllib.request
 from math import isnan
+import glob
+import subprocess
 
 # GitHub
 MPL_DIR = 'src'
@@ -202,7 +204,42 @@ def get_frame(tag, poly, nuc, i_alig, i_HXB2, shift, TF_sequence,polymorphic_sit
 
     return ns
 
-def find_trait_site(tag,min_n):
+def get_trait(tag):
+    
+    df_info = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+
+    """Get escape sites"""
+    # get all epitopes for one tag
+    df_rows = df_info[df_info['epitope'].notna()]
+    unique_epitopes = df_rows['epitope'].unique()
+
+    escape_group  = [] # escape group (each group should have more than 2 escape sites)
+    escape_TF     = [] # corresponding wild type nucleotide
+    epinames      = [] # name for binary trait
+
+    for epi in unique_epitopes:
+        df_e = df_rows[(df_rows['epitope'] == epi) & (df_rows['escape'] == True)] # find all escape mutation for one epitope
+        unique_sites = df_e['polymorphic_index'].unique()
+        unique_sites = [int(site) for site in unique_sites]
+
+        if len(df_e) > 1:# if there are more than escape mutation instead of escape site for this epitope
+            epi_name = epi[0]+epi[-1]+str(len(epi))
+            epinames.append(epi_name)
+            escape_group.append(list(unique_sites))
+            escape_TF_epi = []  
+            for site in unique_sites:
+                tf_values = []
+                df_site = df_info[df_info['polymorphic_index'] == site]
+                for i in range(len(df_site)):
+                    if df_site.iloc[i].escape != True:
+
+                        tf_values.append(int(NUC.index(df_site.iloc[i].nucleotide)))
+                escape_TF_epi.append(tf_values)
+            escape_TF.append(escape_TF_epi)
+
+    return escape_group, escape_TF,epinames
+
+def find_nons_mutations(tag):
     '''
     find trait sites and corresponding TF sequence and save the information into new csv file
     '''
@@ -210,8 +247,8 @@ def find_trait_site(tag,min_n):
     """Load the set of epitopes targeted by patients"""
     df_poly  = pd.read_csv('%s/notrait/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
     df_epi   = pd.read_csv('%s/epitopes.csv'%HIV_DIR, comment='#', memory_map=True)
-
-    df_index = pd.read_csv('../paper-MPL-inference-master/data/HIV/processed/%s-index.csv' %(tag), comment='#', memory_map=True)
+    df_index = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+    
     # TF sequence
     TF_sequence = []
     for i in range(len(df_index)):
@@ -274,60 +311,313 @@ def find_trait_site(tag,min_n):
     df_poly.insert(4, 'escape', escape_values)
     df_poly.to_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), index=False,na_rep='nan')
 
-    """get all epitopes for one tag"""
-    df_poly = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
-    df_rows = df_poly[df_poly['epitope'].notna()]
-    unique_epitopes = df_rows['epitope'].unique()
+    escape_group, escape_TF,epinames = get_trait(tag)
 
-    trait_all   = []
-    trait_all_i = []
+    if len(escape_group)!= 0:
+        print(f'CH{tag[-5:]} has {len(escape_group)} binary traits,', end = ' ')
+        for n in range(len(escape_group)):
+            print(f'epitope {epinames[n]} : {escape_group[n]},', end = ' ')
+        print()
+    else:
+        print('%s has no bianry trait'%tag)
+
+# loading data from dat file
+def getSequence(history,escape_TF,escape_group):
+    sVec      = []
+    nVec      = []
+    eVec      = []
+
+    temp_sVec   = []
+    temp_nVec   = []
+    temp_eVec   = []
+
+    times       = []
+    time        = 0
+    times.append(time)
+
+    ne          = len(escape_group)
+
+    for t in range(len(history)):
+        if history[t][0] != time:
+            time = history[t][0]
+            times.append(int(time))
+            sVec.append(temp_sVec)
+            nVec.append(temp_nVec)
+            eVec.append(temp_eVec)
+            temp_sVec   = []
+            temp_nVec   = []
+            temp_eVec   = []
+
+        temp_nVec.append(history[t][1])
+        temp_sVec.append(history[t][2:])
+
+        if ne > 0: # the patient contains escape group
+            temp_escape = np.zeros(ne, dtype=int)
+            for n in range(ne):
+                for nn in range(len(escape_group[n])):
+                    index = escape_group[n][nn] + 2
+                    if history[t][index] not in escape_TF[n][nn]:
+                        temp_escape[n] = 1
+                        break
+            temp_eVec.append(temp_escape)
+
+        if t == len(history)-1:
+            sVec.append(temp_sVec)
+            nVec.append(temp_nVec)
+            eVec.append(temp_eVec)
+
+    return sVec,nVec,eVec
+
+# get muVec
+def getMutantS(seq_length, sVec):
+    q = len(NUC)
+    # use muVec matrix to record the index of time-varying sites
+    muVec = -np.ones((seq_length, q)) # default value is -1, positive number means the index
+    x_length  = 0
+
+    for i in range(seq_length):            
+        # find all possible alleles in site i
+        alleles     = [int(sVec[t][k][i]) for t in range(len(sVec)) for k in range(len(sVec[t]))]
+        allele_uniq = np.unique(alleles)
+        for allele in allele_uniq:
+            muVec[i][int(allele)] = x_length
+            x_length += 1
+
+    return x_length,muVec
+
+# calculate single and pair allele frequency (multiple case)
+def get_allele_frequency(sVec,nVec,eVec,muVec,x_length):
+
+    seq_length = len(muVec)
+    ne         = len(eVec[0][0])
+
+    x  = np.zeros((len(nVec),x_length))           # single allele frequency
+    xx = np.zeros((len(nVec),x_length,x_length))  # pair allele frequency
+    for t in range(len(nVec)):
+        pop_size_t = np.sum([nVec[t]])
+        for k in range(len(nVec[t])):
+            # individual locus part
+            for i in range(seq_length):
+                qq = int(sVec[t][k][i])
+                aa = int(muVec[i][qq])
+                if aa != -1: # if aa = -1, it means the allele does not exist
+                    x[t,aa] += nVec[t][k]
+                    for j in range(int(i+1), seq_length):
+                        qq = int(sVec[t][k][j])
+                        bb = int(muVec[j][qq])
+                        if bb != -1:
+                            xx[t,aa,bb] += nVec[t][k]
+                            xx[t,bb,aa] += nVec[t][k]
+            # escape part
+            for n in range(ne):
+                aa = int(x_length-ne+n)
+                x[t,aa] += eVec[t][k][n] * nVec[t][k]
+                for m in range(int(n+1), ne):
+                    bb = int(x_length-ne+m)
+                    xx[t,aa,bb] += eVec[t][k][n] * eVec[t][k][m] * nVec[t][k]
+                    xx[t,bb,aa] += eVec[t][k][n] * eVec[t][k][m] * nVec[t][k]
+                for j in range(seq_length):
+                    qq = int(sVec[t][k][j])
+                    bb = int(muVec[j][qq])
+                    if bb != -1:
+                        xx[t,bb,aa] += eVec[t][k][n] * nVec[t][k]
+                        xx[t,aa,bb] += eVec[t][k][n] * nVec[t][k]
+        x[t,:]    = x[t,:]/pop_size_t
+        xx[t,:,:] = xx[t,:,:]/pop_size_t
+    return x,xx
+
+# diffusion matrix C
+def diffusion_matrix_at_t(x_0, x_1, xx_0, xx_1, dt, C_int):
+    x_length = len(x_0)
+    for i in range(x_length):
+        C_int[i, i] += dt * (((3 - (2 * x_1[i])) * (x_0[i] + x_1[i])) - 2 * x_0[i] * x_0[i]) / 6
+        for j in range(int(i+1) ,x_length):
+            dCov1 = -dt * (2 * x_0[i] * x_0[j] + 2 * x_1[i] * x_1[j] + x_0[i] * x_1[j] + x_1[i] * x_0[j]) / 6
+            dCov2 =  dt * (xx_0[i,j] + xx_1[i,j]) / 2
+
+            C_int[i, j] += dCov1 + dCov2
+            C_int[j, i] += dCov1 + dCov2
+
+    return C_int
+
+def determine_dependence(tag):
+
+    # obtain raw sequence data
+    seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    escape_group, escape_TF,epinames = get_trait(tag)
+
+    # information for escape group
+    seq_length   = len(seq[0])-2
+    times = []
+    for i in range(len(seq)):
+        times.append(seq[i][0])
+    sample_times = np.unique(times)
+
+    ne           = len(escape_group)
+
+    # obtain sequence data and frequencies
+    sVec,nVec,eVec = getSequence(seq,escape_TF,escape_group)
+    x_length,muVec = getMutantS(seq_length, sVec)
+    x_length      += ne
+
+    # get all frequencies, 
+    # x: single allele frequency, xx: pair allele frequency
+    x,xx         = get_allele_frequency(sVec,nVec,eVec,muVec,x_length)
+    C_int = np.zeros((x_length,x_length))
+        
+    for t in range(1, len(sample_times)):
+        dt = sample_times[t]-sample_times[t-1]
+        diffusion_matrix_at_t(x[t-1], x[t], xx[t-1], xx[t], dt, C_int)
+
+    for i in range(x_length):
+        for j in range(x_length):
+            if abs(C_int[i][j]) < 1e-10:
+                C_int[i][j] = 0
+    
+    # save the covariance matrix into a temporary file with 6 significant figures
+    np.savetxt('temp_cov.np.dat',C_int,fmt='%.6e')
+
+    # run the c++ code to get the reduced row echelon form
+    status = subprocess.run('./rref.out', shell=True)
+
+    # load the reduced row echelon form
+    co_rr = np.loadtxt('temp_rref.np.dat')
+
+    # delete the temporary files
+    status = subprocess.run('rm temp_*.dat', shell=True)
+
+    ll = len(co_rr)
+    df_poly   = pd.read_csv('%s/interim/%s-poly.csv'%(HIV_DIR,tag), memory_map=True)
+
+    Independent = [True] * ne
+
+    for n in range(ne):
+        co_rr_c = list(co_rr.T[ll-ne+n])
+        
+        pivot = co_rr_c.index(np.sum(co_rr_c))
+    
+        if np.sum(abs(co_rr[pivot])) > 1:
+            print(f'CH{tag[-5:]} : trait {epinames[n]}, linked variants:', end=' ')
+            Independent[n] = False
+            for i in range(len(co_rr[pivot])):
+                if co_rr[pivot][i] != 0:
+                    if i < ll-ne:
+                        result = np.where(muVec == i)
+                        variant = str(result[0][0]) + NUC[result[1][0]]
+                        df_i = df_poly[df_poly['polymorphic_index'] == result[0][0]]
+                        
+                        if pd.notna(df_i.iloc[0]['epitope']):
+                            epi = df_i.iloc[0]['epitope']
+                            print(f'{variant}({epi[0]}{epi[-1]}{len(epi)}', end='')
+                        else:
+                            print(f'{variant}(', end='')
+                            
+                        if df_i.iloc[0]['TF'] == NUC[result[1][0]]:
+                            print(f', WT)', end=', ')
+                        else:
+                            print(f')', end=', ')
+                            
+                    else:
+                        nn = i - ll
+                        print(f'{epinames[nn]}', end=', ')
+            print()
+            
 
     "store the information for trait sites into files (trait site and TF trait sequences)"
     f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
     g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
 
-    for epi in unique_epitopes:
-
-        trait_sites = []
-        df_e = df_rows[(df_rows['epitope'] == epi) & (df_rows['escape'] == True)] # find all escape mutation for one epitope
-        trait_sites = df_e['polymorphic_index'].unique()
-
-        if len(trait_sites) > min_n:
-            f.write('%s\n'%'\t'.join([str(i) for i in trait_sites]))
-            trait_all.append(trait_sites)
-            TF_seq  = []
-            for j in range(len(trait_sites)):
-                n_poly  = df_e[df_e['polymorphic_index'] == trait_sites[j]]
-                TF      = n_poly.iloc[0].TF
-                TF_seq.append(NUC.index(TF))
-            g.write('%s\n'%'\t'.join([str(i) for i in TF_seq]))
-        elif len(trait_sites) > 0 :
-            trait_all_i.append(trait_sites)
+    for n in range(ne):
+        if Independent[n]:
+            f.write('%s\n'%'\t'.join([str(i) for i in escape_group[n]]))
+            for m in range(len(escape_group[n])):
+                if m != len(escape_group[n]) - 1:
+                    g.write('%s\t'%'/'.join([str(i) for i in escape_TF[n][m]]))
+                else:
+                    g.write('%s'%'/'.join([str(i) for i in escape_TF[n][m]]))
+            g.write('\n')
     f.close()
     g.close()
-
-    if len(trait_all)!= 0 and len(trait_all_i) == 0:
-        print('-- %s has %d escape groups, they are %s'%(tag,len(trait_all),','.join([str(i) for i in trait_all])))
-    elif len(trait_all)== 0 and len(trait_all_i) != 0:
-        print('== %s has no escape group, the special sites are: %s'%(tag,','.join([str(i) for i in trait_all_i])))
-    elif len(trait_all) != 0 and len(trait_all_i) != 0:
-        print('++ %s has %d (+%d) escape groups, they are %s, the special sites are %s'
-              %(tag,len(trait_all),len(trait_all_i),','.join([str(i) for i in trait_all]),','.join([str(i) for i in trait_all_i])))
-    else:
-        print('   %s has no triat site'%tag)
 
     "store the information for trait sites into files (the number of normal sites between 2 trait sites)"
     df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic'])
     f = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
-    for i in range(len(trait_all)):
-        i_dis = []
-        for j in range(len(trait_all[i])-1):
-            index0 = df_sequence[df_sequence['polymorphic']==trait_all[i][j]].iloc[0].alignment
-            index1 = df_sequence[df_sequence['polymorphic']==trait_all[i][j+1]].iloc[0].alignment
-            i_dis.append(int(index1-index0))
-        f.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
+    for i in range(len(escape_group)):
+        if Independent[i]:
+            i_dis = []
+            for j in range(len(escape_group[i])-1):
+                index0 = df_sequence[df_sequence['polymorphic']==escape_group[i][j]].iloc[0].alignment
+                index1 = df_sequence[df_sequence['polymorphic']==escape_group[i][j+1]].iloc[0].alignment
+                i_dis.append(int(index1-index0))
+            f.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
     f.close()
 
+
+def get_independent():
+    
+    COV_DIR = HIV_DIR + '/output/covariance'
+    
+    flist = glob.glob('%s/c-*.dat'%COV_DIR)
+
+    for f in flist:
+        name = f.split('/')[-1]
+        tag = name.split('.')[0]
+
+        temp_cov = 'temp_cov.np.dat'
+        temp_rr  = 'temp_rref.np.dat'
+        out_rr   = '%s/rr-%s.dat' % (COV_DIR, tag)
+
+        status = subprocess.run('cp %s %s' % (f, temp_cov), shell=True)
+        status = subprocess.run('./rref.out', shell=True)
+        status = subprocess.run('mv %s %s' % (temp_rr, out_rr), shell=True)
+
+    status = subprocess.run('rm %s' % (temp_cov), shell=True)
+    print('Done!')
+
+
+# def find_trait_site(tag):
+#     """get all epitopes for one tag"""
+#     df_poly = pd.read_csv('%s/interim/%s-poly.csv' %(HIV_DIR,tag), comment='#', memory_map=True)
+#     df_rows = df_poly[df_poly['epitope'].notna()]
+#     unique_epitopes = df_rows['epitope'].unique()
+
+#     trait_all   = []
+#     trait_all_i = []
+
+#     "store the information for trait sites into files (trait site and TF trait sequences)"
+#     f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
+#     g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
+
+#     for epi in unique_epitopes:
+
+#         trait_sites = []
+#         df_e = df_rows[(df_rows['epitope'] == epi) & (df_rows['escape'] == True)] # find all escape mutation for one epitope
+#         trait_sites = df_e['polymorphic_index'].unique()
+
+#         if len(df_e) > 1: # if there are more than escape mutation instead of escape site for this epitope
+#             f.write('%s\n'%'\t'.join([str(i) for i in trait_sites]))
+#             trait_all.append(trait_sites)
+#             TF_seq  = []
+#             for j in range(len(trait_sites)):
+#                 n_poly  = df_e[df_e['polymorphic_index'] == trait_sites[j]]
+#                 TF      = n_poly.iloc[0].TF
+#                 TF_seq.append(NUC.index(TF))
+#             g.write('%s\n'%'\t'.join([str(i) for i in TF_seq]))
+#         elif len(trait_sites) > 0 :
+#             trait_all_i.append(trait_sites)
+#     f.close()
+#     g.close()
+
+#     if len(trait_all)!= 0 and len(trait_all_i) == 0:
+#         print('-- %s has %d escape groups, they are %s'%(tag,len(trait_all),','.join([str(i) for i in trait_all])))
+#     elif len(trait_all)== 0 and len(trait_all_i) != 0:
+#         print('== %s has no escape group, the special sites are: %s'%(tag,','.join([str(i) for i in trait_all_i])))
+#     elif len(trait_all) != 0 and len(trait_all_i) != 0:
+#         print('++ %s has %d (+%d) escape groups, they are %s, the special sites are %s'
+#               %(tag,len(trait_all),len(trait_all_i),','.join([str(i) for i in trait_all]),','.join([str(i) for i in trait_all_i])))
+#     else:
+#         print('   %s has no triat site'%tag)
+    
 def get_all_variants(seq,df_poly):
     all_variants = []
     TF_seq       = []
@@ -473,12 +763,8 @@ def analyze_result(tag,verbose=True):
         index_cols = ['polymorphic_index', 'alignment']
         cols = [i for i in list(df) if i not in index_cols]
 
-        if tag != '700010077-3' and tag != '705010162-3':
-            polyseq  = read_file('traitseq/traitseq-'+tag+'.dat')
-            xp = get_xp(seq,traitsite,polyseq)
-        else:
-            polyseq  = read_file_s('traitseq/traitallele-'+tag+'.dat')
-            xp = get_xp_s(seq,traitsite,polyseq)
+        polyseq  = read_file_s('traitseq/traitseq-'+tag+'.dat')
+        xp = get_xp_s(seq,traitsite,polyseq)
 
         if verbose:
             g = open('%s/group/escape_group-%s.csv'%(HIV_DIR,tag),'w')
@@ -500,7 +786,7 @@ def analyze_result(tag,verbose=True):
                         g.write(',%f'%xp[i,t])
                     g.write('\n')
 
-def modify_seq(tag,special_tags):
+def modify_seq(tag):
     '''
     change sequence and escape information to calculate Δsij, reverting mutant
     variant into wild type for individual locus part and thowing out one escape
@@ -515,64 +801,50 @@ def modify_seq(tag,special_tags):
     trait_sites = read_file('traitsite/traitsite-'+tag+'.dat')
 
     g = open('%s/HIV_sij.sh'%(MPL_DIR), "a")
-    if tag in special_tags:
-        g.write('g++ main.cpp inf_special.cpp io.cpp -O3 -mcpu=apple-a14 -std=c++11 -lgsl -lgslcblas -o mpl\n')
-    else:
-        g.write('g++ main.cpp inf.cpp io.cpp -O3 -mcpu=apple-a14 -std=c++11 -lgsl -lgslcblas -o mpl\n')
+    g.write('g++ main.cpp inf.cpp io.cpp -O3 -mcpu=apple-a14 -std=c++11 -lgsl -lgslcblas -o mpl\n')
 
     for i in range(len(all_variants)):
         variant   = all_variants[i]
         trait_site = int(variant.split('_')[0])
         mut_alle  = variant.split('_')[-1]
         mut_index = NUC.index(mut_alle)
-        if tag != '700010077-3' and tag != '705010162-3':
-            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
-            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
-            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
-        else:
-            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
-            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
-            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
 
-        # f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
-        # for j in range(len(seq)):
-        #     seq_modi  = seq[j]
-        #     poly_states = []
-        #     for ii in range(L):
-        #         if ii == trait_site and seq_modi[ii+2] == mut_index:
-        #             poly_states.append(str(TF_seq[trait_site]))
-        #         else:
-        #             poly_states.append(str(int(seq_modi[ii+2])))
-        #     f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
-        # f.close()
+        g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+        g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
+        g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
+        g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+
+        f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,all_variants[i]), "w")
+        for j in range(len(seq)):
+            seq_modi  = seq[j]
+            poly_states = []
+            for ii in range(L):
+                if ii == trait_site and seq_modi[ii+2] == mut_index:
+                    poly_states.append(str(TF_seq[trait_site]))
+                else:
+                    poly_states.append(str(int(seq_modi[ii+2])))
+            f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
+        f.close()
 
     for n in range(len(trait_sites)):
         variant   = 'epi'+str(int(n))
         
-        if tag != '700010077-3' and tag != '705010162-3':
-            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
-            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
-            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
-        else:
-            g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
-            g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
-            g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitallele-%s.dat '%(tag,tag))
-            g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
-
-        # f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
-        # for j in range(len(seq)):
-        #     seq_modi  = seq[j]
-        #     poly_states = []
-        #     for ii in range(L):
-        #         if ii in trait_sites[n]:
-        #             poly_states.append(str(TF_seq[ii]))
-        #         else:
-        #             poly_states.append(str(int(seq_modi[ii+2])))
-        #     f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
-        # f.close()
+        g.write('./mpl -d ../data/HIV -i input/sequence/%s/%s.dat '%(tag,variant))
+        g.write('-o output/%s/sc_%s.dat -g 10 -m input/Zanini-extended.dat -r input/r_rates/r-%s.dat '%(tag,variant,tag))
+        g.write('-e input/traitsite/traitsite-%s.dat -es input/traitseq/traitseq-%s.dat '%(tag,tag))
+        g.write('-ed input/traitdis/traitdis-%s.dat\n'%(tag))
+            
+        f = open('%s/input/sequence/%s/%s.dat'%(HIV_DIR,tag,variant), "w")
+        for j in range(len(seq)):
+            seq_modi  = seq[j]
+            poly_states = []
+            for ii in range(L):
+                if ii in trait_sites[n]:
+                    poly_states.append(str(TF_seq[ii]))
+                else:
+                    poly_states.append(str(int(seq_modi[ii+2])))
+            f.write('%d\t1\t%s\n'%(seq_modi[0],' '.join(poly_states)))
+        f.close()
 
     g.close()
 

@@ -20,7 +20,7 @@ bool useDebug = false;
 void computeAlleleFrequencies(const IntVector &sequences,        // vector of sequence vectors in one generation
                               const std::vector<double> &counts, // vector of sequence counts
                               const IntVector &trait_sites,       // vector about escape site information
-                              const IntVector &trait_sequence,    // vector about escape sequence information
+                              const IntVVector &trait_sequence,    // vector about escape sequence information
                               int q,                   // number of states (e.g., number of nucleotides or amino acids)
                               std::vector<double> &p1, // single allele frequencies
                               std::vector<double> &p2, // pair allele frequencies
@@ -32,59 +32,80 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
     for (int a=0;a<p2.size();a++) p2[a] = 0;
     for (int a=0;a<pt.size();a++) pt[a] = 0;
 
-    int L  = (int) sequences[0].size(); //length of the genotype
-    int LL = (int) p1.size(); // length of allele frequencies vector
-    int ne = (int) trait_sites.size(); //number of escape group
+    int L  = (int) sequences[0].size(); // sequence length
+    int LL = (int) p1.size();           // length of allele frequencies vector
+    int ne = (int) trait_sites.size();  // number of escape group
 
     // Iterate through sequences and count the frequency of each state at each site,
     // and the frequency of each pair of states at each pair of sites
 
-    for (int k=0;k<sequences.size();k++) { //genotypes in one generation, k:type
+    for (int k=0;k<sequences.size();k++) { // genotypes in one generation, k:type
 
-        std::vector<int> traitvalue(ne,0);
+        // record nonsynonymous mutation information (number and site) for all epitopes
 
-        for (int nn=0; nn<ne;nn++){
+        std::vector<int> n_nonsyn(ne,0); // number of sites containing nonsynonymous mutation for each epitope
+        IntVector site_nonsyn;           // sites containing nonsynonymous mutation for all epitopes
 
-            for (int po=0;po<trait_sites[nn].size();po++){
+        for (int nn=0; nn<ne;nn++){ // for different epitopes
 
-                int po_site = (int)trait_sites[nn][po];
-                traitvalue[nn] += abs(sequences[k][po_site] - trait_sequence[nn][po]);
+            std::vector<int> site_nonsyn_nn; // sites containing nonsynonymous mutation for epitopes nn
 
+            for (int po=0;po<trait_sites[nn].size();po++){ // for different sites in epitope nn
+
+                int po_site = (int)trait_sites[nn][po]; 
+
+                // find whether the allele on po_site for sequences is an nonsynonymous mutant allele
+                bool nonsyn = true;
+                for (int element : trait_sequence[nn][po]) {
+                    if (element == sequences[k][po_site]) { 
+                        nonsyn = false;
+                        break;
+                    }
+                }
+
+                if (nonsyn) {
+                    // allele on po_site for sequences k was not WT/sysnonmous mutation
+                    n_nonsyn[nn] += 1;
+                    site_nonsyn_nn.push_back(po_site);
+                }
             }
 
+            site_nonsyn.push_back(site_nonsyn_nn);
         }
 
-        for (int i=0;i<sequences[k].size();i++) { // sites in one genotype, i:site
+        // frequency for single allele and pair allele (individual term part)
+        for (int i=0;i<sequences[k].size();i++) { // for different sites in one genotype, i:site
 
-            int a = (i * q) + sequences[k][i]; // information include site i and allele in this site
+            int aa = (i * q) + sequences[k][i]; // information include site i and allele in this site
 
-            p1[a] += counts[k]; //single allele frequencies - selection part
+            p1[aa] += counts[k]; //single allele frequencies - selection part
 
             for (int j=i+1;j<sequences[k].size();j++) {
 
-                int b = (j * q) + sequences[k][j]; // information include site i and allele in this site
+                int bb = (j * q) + sequences[k][j]; // information include site i and allele in this site
 
-                p2[(a * LL) + b] += counts[k]; // L not the length of the sequence but the length of p1 vector
-                p2[(b * LL) + a] += counts[k]; //pair allele frequencies (symmetry matrix)
+                p2[(aa * LL) + bb] += counts[k]; // LL : not the length of the sequence but the length of p1 vector
+                p2[(bb * LL) + aa] += counts[k]; // pair allele frequencies (symmetry matrix)
             }
 
-            for (int nn=0; nn<ne;nn++){ if (traitvalue[nn] != 0) {
+            for (int nn=0; nn<ne;nn++){ if (n_nonsyn[nn] != 0) {
 
                     int bb = L * q + nn; // sequence length * allele number
 
-                    p2[(a * LL) + bb] += counts[k];
-                    p2[(bb * LL) + a] += counts[k];
+                    p2[(aa * LL) + bb] += counts[k];
+                    p2[(bb * LL) + aa] += counts[k];
 
             }}
         }
 
-        for (int nn=0; nn<ne;nn++){ if (traitvalue[nn] != 0){
+        // frequency for single allele and pair allele (trait term part)
+        for (int nn=0; nn<ne;nn++){ if (n_nonsyn[nn] != 0){ // for different epitopes in one genotype,
 
-            int aa =  L * q + nn;//site for escape term
+            int aa =  L * q + nn; //site for trait term
 
-            p1[aa] += counts[k]; //single allele frequencies - escape part
+            p1[aa] += counts[k];  //single allele frequencies - escape part
 
-            for (int mm=nn+1; mm<ne;mm++){ if (traitvalue[mm] != 0){
+            for (int mm=nn+1; mm<ne;mm++){ if (n_nonsyn[mm] != 0){
 
                 int bb =  L * q + mm;
 
@@ -92,37 +113,81 @@ void computeAlleleFrequencies(const IntVector &sequences,        // vector of se
                 p2[(bb * LL) + aa] += counts[k];
 
             }}
-
-            int site = 0;
-            int n_mutations = 0;//mutation number in the escape group
-
-            for (int po=0; po<(int) trait_sites[nn].size(); po++){
-
-                int po_site = trait_sites[nn][po];
-
-                if (sequences[k][po_site] != trait_sequence[nn][po]){
-
-                    n_mutations += 1;
-                    site = po_site;
-
-                }
-
-            }
-            if (n_mutations == 1){
-
-                int qq = (int)sequences[k][site];
-                pt[ ((nn * L) + site ) * q + qq] += counts[k];
-
-            }
         }}
+            
+        // pt: escape term frequencies
+        // pt_{i,alpha}^n : for epitope n, allele for site i is alpha and 
+        // alleles for other trait sites are wild type or synonymous mutation
+        for (int nn=0; nn<ne;nn++){
+
+            // a single nonsynonymous mutation for epitope nn frequency
+            if (n_nonsyn[nn] == 1){
+                
+                int site = site_nonsyn[nn][0];
+                int qq = (int)sequences[k][site];
+                pt[site * q + qq] += counts[k];
+
+            }
+
+            // no nonsynonymous mutation for epitope nn frequency
+            if (n_nonsyn[nn] == 0){
+                
+                for (int po=0;po<trait_sites[nn].size();po++){ // for different sites in epitope nn
+                    
+                    int site = trait_sites[nn][po];
+                    int qq = (int)sequences[k][site];
+                    pt[site * q + qq] += counts[k];
+                
+                }
+            }
+        }
     }
+}
+
+bool compareElementsBegin(int k_bp,
+                          const Eigen::VectorXf& a, 
+                          const std::vector<Eigen::VectorXf>& B
+                         ) {
+
+    bool differentHead = false;
+
+    for (const auto& b : B) {
+        // check the beginning elements
+        if (a.head(k_bp) == b.head(k_bp)) {
+            differentHead = true;
+            break;
+        }
+    }
+   
+    // return the result
+    return differentHead;
+}
+
+bool compareElementsEnd(int k_bp,
+                        int n_length,
+                        const Eigen::VectorXf& a, 
+                        const std::vector<Eigen::VectorXf>& B
+                       ) {
+
+    bool differentTail = false;
+
+    for (const auto& b : B) {
+
+        // check the end elements
+        if (a.tail(n_length - k_bp) == b.tail(n_length - k_bp)) {
+            differentTail = true;
+            break;
+        }
+    }
+    // return the result
+    return differentTail;
 }
 
 // Calculate frequencies for recombination part (binary case)
 void computeRecFrequencies(const IntVector &sequences,        // vector of sequence vectors in one generation
                            const std::vector<double> &counts, // vector of sequence counts
                            const IntVector &trait_sites,      // vector about escape site information
-                           const IntVector &trait_sequence,   // vector about escape sequence information
+                           const IntVVector &trait_sequence,   // vector about escape sequence information
                            std::vector<double>& pk            // frequencies for recombination part
                            ) {
     
@@ -130,43 +195,84 @@ void computeRecFrequencies(const IntVector &sequences,        // vector of seque
     for (int a=0;a<pk.size();a++) pk[a] = 0;
 
     int L  = (int) sequences[0].size(); //length of the genotype, sequence length
-    int LL = (int) pk.size(); // length of pk
     int ne = (int) trait_sites.size(); //number of escape group
     
     // Iterate through sequences and count the frequency for recombination term
     for (int n=0; n<ne;n++){ // for different trait groups
         
-        int n_length = (int)trait_sites[n].size();             // length for escape group n
-        Eigen::VectorXf sWT_n(n_length), sVec_n(n_length);
+        int n_length = (int)trait_sites[n].size(); // length for epitope n
         
-        // wild type sequence for escape group n 
-        for (int i = 0; i < n_length; i++) sWT_n[i] = trait_sequence[n][i];    
+        // Get all possible sequences not contributing to trait term for epitope n
+        std::vector<Eigen::VectorXf> sWT_n_all;    
 
-        for (int k=0;k<sequences.size();k++) { //genotypes in one generation, k:type
+        int combinations = 1; // Calculate the number of sequences that does not contribute to the trait term
+        
+        for (const auto& values : trait_sequence[n]) {
+            if (values.size() > 1) {           // Check if the site contains more than one allele
+                combinations *= values.size(); // Multiply by the number of alleles at the site
+            }
+        }
+
+        for (int combo = 0; combo < combinations; ++combo) {
             
+            Eigen::VectorXf sWT_n(n_length); // wild type sequence for escape group n
+
+            int comboIndex = combo;
+            
+            // get allele combination for escape group n that does not contribute to the trait term
+            // including wild type allele and synonymous mutant allele
+
+            for (size_t i = 0; i < n_length; ++i) {
+                
+                if (trait_sequence[n][i].size() > 1) {
+                    
+                    // If the site has multiple alleles, select one based on the combination index
+                    int valueIndex = comboIndex % trait_sequence[n][i].size();
+                    sWT_n[i] = trait_sequence[n][i][valueIndex];
+                    comboIndex /= trait_sequence[n][i].size(); // Update combination index for the next multi-allele site
+                
+                } else {
+                
+                    // The site only has one allele (the wild type allele)
+                    sWT_n[i] = trait_sequence[n][i][0];
+                
+                }
+            }
+            sWT_n_all.push_back(sWT_n);
+        }
+    
+        // After get the wild type sequence for escape group n, calculate the recombination term
+        // Iterate through sequences and count the frequency for recombination term
+
+        for (int k=0;k<sequences.size();k++) { // genotypes in one generation, k:type
+
+            // get allele information for sequence k for escape group n
+            Eigen::VectorXf sVec_n(n_length); 
             for (int ii = 0; ii < n_length; ii++) {
-                int po_site = trait_sites[n][ii];                   // index for trait sites
+                int po_site = trait_sites[n][ii];   // index for trait sites
                 sVec_n[ii] = sequences[k][po_site]; // escape group n sequence for genotype_k
             }
 
-            for (int nn = 0; nn < n_length - 1; nn++) {
-                int k_bp = nn + 1;   // break point k
-                int index_k = trait_sites[n][nn];                   // index for trait sites
+
+            // calculate the recombination term by comparing sWT_n and sVec_n
+            for (int nn = 0; nn < n_length - 1; nn++) { // number for break point for epitope n
+                
+                int k_bp = nn + 1;                   // break point k
+                int index_k = trait_sites[n][nn];    // index for trait sites
+                
+                bool b_begin = compareElementsBegin(k_bp, sVec_n, sWT_n_all);
+                bool b_end = compareElementsEnd(k_bp,n_length, sVec_n, sWT_n_all);
+                // True : sVec_n is same with one of the sWT_n_all, which means WT
+                // False: sVec_n is different with all of the sWT_n_all, which means MT
 
                 // MT before and after break point k
-                if (sWT_n.head(k_bp) != sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) != sVec_n.tail(n_length - k_bp)) {
-                    pk[n * L * 3 + index_k * 3 + 0] += counts[k];
-                }
+                if (!b_begin && !b_end) pk[index_k * 3 + 0] += counts[k];
                 
-                // # MT before break point k and WT after break point k
-                if (sWT_n.head(k_bp) != sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) == sVec_n.tail(n_length - k_bp)) {
-                    pk[n * L * 3 + index_k * 3 + 1] += counts[k];
-                }
+                // MT before break point k and WT after break point k
+                if (!b_begin && b_end) pk[index_k * 3 + 1] += counts[k];
                 
                 // # WT before break point k and MT after break point k
-                if (sWT_n.head(k_bp) == sVec_n.head(k_bp) && sWT_n.tail(n_length - k_bp) != sVec_n.tail(n_length - k_bp)) {
-                    pk[n * L * 3 + index_k * 3 + 2] += counts[k];
-                }
+                if (b_begin && !b_end) pk[index_k * 3 + 2] += counts[k];
             }
         }
     }
@@ -193,10 +299,12 @@ void updateCovarianceIntegrate(double dg, // time step
 
             double dCov1 = -dg * ((2 * p1_0[a] * p1_0[b]) + (2 * p1_1[a] * p1_1[b]) + (p1_0[a] * p1_1[b]) + (p1_1[a] * p1_0[b])) / 6;
             double dCov2 = dg * 0.5 * (p2_0[(a * LL) + b] + p2_1[(a * LL) + b]);
+            double dCov  = dCov1 + dCov2;
 
-            totalCov[(a * LL) + b] += dCov1 + dCov2;
-            totalCov[(b * LL) + a] += dCov1 + dCov2;
+            if ( std::abs(dCov) < 1e-10) {dCov = 0;} // set small values to zero
 
+            totalCov[(a * LL) + b] += dCov;
+            totalCov[(b * LL) + a] += dCov;
         }
     }
 }
@@ -208,7 +316,7 @@ void updateMuIntegrate(double dg, // time step
                        int L, //sequence length
                        const Vector &muMatrix, // mutation matrix
                        const IntVector &trait_sites, // vector about escape information
-                       const IntVector &trait_sequence,    // vector about escape sequence information
+                       const IntVVector &trait_sequence,    // vector about escape sequence information
                        const std::vector<double> &p1_0, // single allele frequencies
                        const std::vector<double> &pt_0, // escape term frequencies
                        const std::vector<double> &p1_1, // single allele frequencies
@@ -245,27 +353,36 @@ void updateMuIntegrate(double dg, // time step
         }
     }
 
-    for (int nn=0; nn<ne; nn++){
+    for (int nn=0; nn<ne; nn++){ // Iterate through epitopes
 
         for (int po=0;po<trait_sites[nn].size();po++){
-
-            int  TF_index = trait_sequence[nn][po];
+            
             int  po_site = (int) trait_sites[nn][po];
 
-            for (int b=0;b<TF_index;b++) {
+            for (int bb=0;bb<q;bb++){ // check all alleles
+                
+                bool found = false; // find the alleles that can contribute to the trait term
+                for (int element : trait_sequence[nn][po]) {
+                    if (element == bb) {
+                        found = true;
+                        break;
+                    }
+                }
+                        
+                if (!found) {// allele b on po_site for sequences k was not WT/sysnonmous mutation
+                    
+                    // for all alleles that do not contribute to trait term
+                    for (int a=0;a<(int)trait_sequence[nn][po].size();a++) { 
+                        
+                        int  aa = trait_sequence[nn][po][a];
 
-                double x_in  = 1 - 0.5 * ( p1_0[(L * q) + nn] + p1_1[(L * q) + nn]);
-                double x_out = (pt_0[((nn * L) + po_site) * q + b]+pt_1[((nn * L) + po_site) * q + b])*0.5;
-                totalMu[(L * q) + nn] += dg * (x_in * muMatrix[TF_index][b] - x_out * muMatrix[b][TF_index]);
+                        // double x_in  = 1 - 0.5 * ( p1_0[(L * q) + nn] + p1_1[(L * q) + nn]);
+                        double x_in  = (pt_0[po_site * q + aa] + pt_1[po_site * q + aa]) / 2 ;
+                        double x_out = (pt_0[po_site * q + bb] + pt_1[po_site * q + bb]) / 2 ;
+                        totalMu[(L * q) + nn] += dg * (x_in * muMatrix[aa][bb] - x_out * muMatrix[bb][aa]);
 
-            }
-
-            for (int b=TF_index+1;b<q;b++) {
-
-                double x_in  = 1 - 0.5 * ( p1_0[(L * q) + nn] + p1_1[(L * q) + nn]);
-                double x_out = (pt_0[((nn * L) + po_site) * q + b]+pt_1[((nn * L) + po_site) * q + b])*0.5;
-                totalMu[(L * q) + nn] += dg * (x_in * muMatrix[TF_index][b] - x_out * muMatrix[b][TF_index]);
-
+                    }
+                }
             }
         }
     }
@@ -277,7 +394,7 @@ void updateComIntegrate(double dg,                       // time step
                         double r_rate_0,                 // recombination rate
                         double r_rate_1,                 // recombination rate
                         const IntVector &trait_sites,    // vector about escape information
-                        const IntVector &trait_sequence, // vector about escape sequence information
+                        const IntVVector &trait_sequence, // vector about escape sequence information
                         const IntVector &trait_dis,      // vector about escape sequence information
                         const std::vector<double> &p1_0, // single allele frequencies
                         const std::vector<double> &pk_0, // frequencies for recombination part
@@ -285,7 +402,6 @@ void updateComIntegrate(double dg,                       // time step
                         const std::vector<double> &pk_1, // frequencies for recombination part
                         std::vector<double> &totalCom    // contribution to selection estimate from mutation
                         ) {
-
     int ne = (int) trait_sites.size(); // number of escape goups
 
     for (int n = 0; n < ne; n++) {
@@ -295,12 +411,12 @@ void updateComIntegrate(double dg,                       // time step
 
         for (int nn = 0; nn < trait_sites[n].size() - 1; nn++) {
 
-            int aa   = n * L * 3 + trait_sites[n][nn] * 3;
+            int aa   = trait_sites[n][nn] * 3;
             fluxIn  += trait_dis[n][nn] * (1 - (p1_0[L * q + n]+p1_1[L * q + n])/2) * (pk_0[aa + 0]+pk_1[aa + 0])/2;
             fluxOut += trait_dis[n][nn] * (pk_0[aa + 1] + pk_1[aa + 1]) * (pk_0[aa + 2] + pk_1[aa + 2])/4;
 
         }
-        totalCom[(L * q) + n] += dg * (r_rate_0 + r_rate_1) * (fluxIn - fluxOut)/2;
+        totalCom[(L * q) + n] += dg * (r_rate_0 + r_rate_1)  * (fluxIn - fluxOut) / 2;
     }
 }
 
@@ -311,7 +427,7 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
                      const Vector &muMatrix,           // matrix of mutation rates
                      const RVector &r_rates,            // vector of recombination rates
                      const IntVector &trait_sites,     // matrix of escape sites
-                     const IntVector &trait_sequence,  // vector about escape sequence information
+                     const IntVVector &trait_sequence,  // vector about escape sequence information
                      const IntVector &trait_dis,       // vector about escape sequence information
                      int q,                            // number of states (e.g., number of nucleotides or amino acids)
                      double totalCov[],                // integrated covariance matrix
@@ -325,12 +441,12 @@ void processStandard(const IntVVector &sequences,      // vector of sequence vec
     std::vector<double> totalCom(LL,0);             // accumulated recombination term
     std::vector<double> p1(LL,0);                   // current allele frequency vector
     std::vector<double> p2(LL*LL,0);                // current allele pair frequencies
-    std::vector<double> pt(L*ne*q,0);               // current escape term frequencies
-    std::vector<double> pk(L*ne*3,0);               // current frequencies for recombination part
+    std::vector<double> pt(L*q,0);                  // current escape term frequencies
+    std::vector<double> pk(L*3,0);                  // current frequencies for recombination part
     std::vector<double> lastp1(LL,0);               // previous allele frequency vector
     std::vector<double> lastp2(LL*LL,0);            // previous allele pair frequencies
-    std::vector<double> lastpt(L*ne*q,0);           // previous escape term frequencies
-    std::vector<double> lastpk(L*ne*3,0);           // previous frequencies for recombination part
+    std::vector<double> lastpt(L*q,0);           // previous escape term frequencies
+    std::vector<double> lastpk(L*3,0);           // previous frequencies for recombination part
 
     // set initial allele frequency and covariance then loop
     computeAlleleFrequencies(sequences[0], counts[0], trait_sites, trait_sequence, q, lastp1, lastp2,lastpt);
@@ -432,8 +548,8 @@ int run(RunParameters &r) {
     if (FILE *poin = fopen(r.getTraitInfile().c_str(),"r"))  { getTrait(poin, trait_sites); fclose(poin);}
     else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getTraitInfile().c_str()); return EXIT_FAILURE; }
 
-    IntVector trait_sequence; // TF trait sequences
-    if (FILE *poin = fopen(r.getTraitSInfile().c_str(),"r")) { getTrait(poin, trait_sequence); fclose(poin);}
+    IntVVector trait_sequence; // TF trait sequences
+    if (FILE *poin = fopen(r.getTraitSInfile().c_str(),"r")) { getTraitnew(poin, trait_sequence); fclose(poin);}
     else { printf("Problem retrieving data from file %s! File may not exist or cannot be opened.\n",r.getTraitSInfile().c_str()); return EXIT_FAILURE; }
 
     IntVector trait_dis; // TF trait sequences
@@ -475,9 +591,6 @@ int run(RunParameters &r) {
 
     } }
 
-    // REGULARIZE
-    regularizeCovariance(sequences, ne, r.q, gamma, totalCov);
-
     // RECORD COVARIANCE (optional)
     if (r.saveCovariance) {
         if (FILE *dataout = fopen(r.getCovarianceOutfile().c_str(),"w")) { printCovariance(dataout, totalCov, LL); fclose(dataout); }
@@ -489,6 +602,9 @@ int run(RunParameters &r) {
         if (FILE *dataout = fopen(r.getNumeratorOutfile().c_str(),"w")) { printNumerator(dataout, dx, LL); fclose(dataout); }
         else { printf("Problem writing data to file %s! File may not be created or cannot be opened.\n",r.getCovarianceOutfile().c_str()); return EXIT_FAILURE; }
     }
+
+    // REGULARIZE
+    regularizeCovariance(sequences, ne, r.q, gamma, totalCov);
 
     // INFER THE SELECTION COEFFICIENTS -- solve Cov . sMAP = dx
     std::vector<double> sMAP(LL,0);

@@ -1643,7 +1643,6 @@ def plotReversionFaction(**pdata):
 
 @dataclass
 class Result:
-    variants: int
     seq_length: int
     special_sites: List[int]
     uniq_t: List[float]
@@ -1661,9 +1660,7 @@ def AnalyzeData(tag):
     uniq_t = np.unique(times)
 
     """get variants number and sequence length"""
-    df_poly  = df_info[df_info['nucleotide']!=df_info['TF']]
-    variants = len(df_poly)
-    seq_length = df_info.iloc[-1].polymorphic_index + 1
+    seq_length = len(seq[0])-2
 
     """get special sites and escape sites"""
     # get all epitopes for one tag
@@ -1690,7 +1687,7 @@ def AnalyzeData(tag):
 
     special_sites = [item for sublist in special_sites for item in sublist]
 
-    return Result(variants, seq_length,special_sites,uniq_t,escape_group,escape_TF)
+    return Result(seq_length,special_sites,uniq_t,escape_group,escape_TF)
 
 def getSC(tag):
 

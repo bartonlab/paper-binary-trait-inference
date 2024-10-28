@@ -19,7 +19,6 @@ figures/sim/
 figures/tv
 figures/rx*
 
-
 # Large files
 data/simulation/jobs/
 data/HIV/input/sequence/7*/
@@ -27,5 +26,6 @@ data/HIV/output/7*/
 data/simulation/time-varying
 data/HIV/rx
 src/rx*
-
+data/HIV/covariance
+data/old
 *.tar.gz
