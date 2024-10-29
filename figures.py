@@ -617,7 +617,10 @@ def plot_sc_escape(**pdata):
     sc_all_notrait = []
 
     for tag in tags:
-        df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        try:
+            df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        except FileNotFoundError:
+            continue
         df_epitope = df_epitope[(df_epitope.escape == True)]
 
         for i in range(len(df_epitope)):
@@ -692,8 +695,11 @@ def plot_tc_rec(**pdata):
     tc_all_noR = []
 
     for tag in tags:
-        df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        df_tc_noR = pd.read_csv('%s/noR/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        try:
+            df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+            df_tc_noR = pd.read_csv('%s/noR/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        except FileNotFoundError:
+            continue
         unique_epitopes = df_tc['epitope'].unique()
         for epitope in unique_epitopes:
             tc_all.append(df_tc[df_tc.epitope == epitope].iloc[0].tc_MPL)
@@ -765,10 +771,17 @@ def plot_histogram_fraction_HIV(**pdata):
     tc = []
 
     for tag in tags:
-        df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        unique_epitopes = df_tc['epitope'].unique()
-        for epitope in unique_epitopes:
+        try:
+            df_tc     = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        except FileNotFoundError:
+            continue
+        unique_traits = df_tc['epitope'].unique()
+        for epitope in unique_traits:
             tc.append(df_tc[df_tc.epitope == epitope].iloc[0].tc_MPL)
+
+    print(f'There are {len(tc)} epitopes can be seen as the binary traits.')
+    print(f'Highest escape coefficient: {max(tc)}, average escape coefficient: {np.mean(tc)}')
+    print(f'Median escape coefficient: {np.median(tc)}, lowest escape coefficient: {min(tc)}')
 
     # get all escape contribution
     fractions = []
@@ -1230,65 +1243,68 @@ def plot_CH470_5(**pdata):
 
     # unpack data
 
-    patient    = pdata['patient']
-    region     = pdata['region']
-    epitope    = pdata['epitope']
+    tag        = pdata['tag']
+
     traj_ticks = pdata['traj_ticks']
-    variants   = pdata['variants']
-    high_var   = pdata['high_var']
-    seq_length = pdata['seq_length']
-    note_var   = pdata['note_var']
-    tag        = patient+'-'+region
+    variants   = pdata['variants']   # variants have strong linkage with 17A (HXB2 index 974)
+    high_var   = pdata['high_var']   # variants that need to be highlighted
+    note_var   = pdata['note_var']   # variants that need to be texted
 
     # process stored data
 
     df_poly = pd.read_csv('%s/analysis/%s-analyze.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+    df_epi  = df_poly[df_poly['tc_MPL'].notna()]
+    epitopes = df_epi['epitope'].unique()
+    seq_length = df_poly.iloc[-1]['polymorphic_index']+1
+
     df_sij  = pd.read_csv('%s/sij/%s-sij.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
 
     times = [int(i.split('_')[-1]) for i in df_poly.columns if 'f_at_' in i]
     times.sort()
 
-    var_sold  = []
-    var_snew  = []
-    epi_sold  = []
-    epi_snew  = []
-    var_traj  = []
-    hig_traj  = []
-    var_tag   = []
-    var_note  = []
-    ds_matrix = []
-    new_var   = []
-    new_note  = []
+    var_sold  = [] # selection coefficient for all variants without binary traits
+    var_snew  = [] # selection coefficient for all variants with binary traits
+    esc_sold  = [] # selection coefficient for escape mutations without binary traits
+    esc_snew  = [] # selection coefficient for escape mutations with binary traits
+    epi_name  = [] # the name for each independent epitopes
+    var_traj  = [] # frequency trajectory for strong linked variants (non-hightlighted one)
+    hig_traj  = [] # frequency trajectory for strong linked variants (hightlighted one)
+    ds_matrix = [] # s_ij matrix between linked variants
+    var_name  = [] # name for each variants (HXB2 index + nucleotide)
+    text_sc   = [] # selection coefficient for variants that need to be texted
+    text_name = [] # name for each variants that need to be texted
 
-    for i in range(seq_length):
-        df_esc  = df_poly[(df_poly.polymorphic_index==i)& (df_poly.sc_MPL != 0)& (df_poly.nucleotide != '-') ]
+    '''Get the selection coefficients w/ vs. w/o binary traits for all variants'''
+    for i in range(seq_length): 
+        df_esc  = df_poly[(df_poly.polymorphic_index==i)& (df_poly.sc_MPL != 0) & (df_poly.nucleotide != '-') ]
         for df_iter, df_entry in df_esc.iterrows():
-            if df_entry.nucleotide!='-' and df_entry.epitope not in epitope:
+            if df_entry.epitope not in epitopes:
                 var_sold.append(df_entry.sc_old)
                 var_snew.append(df_entry.sc_MPL)
 
-    for i in range(len(epitope)):
-        df_esc  = df_poly[(df_poly.epitope==epitope[i]) & (df_poly.sc_MPL != 0)]
-        epi_nuc = ''.join(epitope[i])
-        var_tag.append(epi_nuc[0]+epi_nuc[-1]+str(len(epi_nuc)))
+    for i in range(len(epitopes)): # escape mutations
+        df_esc  = df_poly[(df_poly.epitope==epitopes[i]) & (df_poly.sc_MPL != 0) & (df_poly.nucleotide != '-') ]
+        epi_nuc = ''.join(epitopes[i])
+        epi_name.append(epi_nuc[0]+epi_nuc[-1]+str(len(epi_nuc)))
         sold = []
         snew = []
         for df_iter, df_entry in df_esc.iterrows():
-            if df_entry.nucleotide!='-' and df_entry.tc_MPL > 0:
+            if pd.notna(df_entry.tc_MPL):
                 sold.append(df_entry.sc_old)
                 snew.append(df_entry.sc_MPL)
-        epi_sold.append(sold)
-        epi_snew.append(snew)
+        esc_sold.append(sold)
+        esc_snew.append(snew)
 
+    '''Find the frequencies and s_ij values for variants that have strong linkage with 17A'''
     for i in range(len(variants)):
-        index_t = int(variants[i].split('_')[0])
-        neucl_t = variants[i].split('_')[-1]
+        site_i = int(variants[i].split('_')[0])
+        nuc_i  = variants[i].split('_')[-1]
 
-        df_esc  = df_poly[(df_poly.polymorphic_index==index_t)& (df_poly.nucleotide == neucl_t)]
-        df_ds   = df_sij[(df_sij.target_polymorphic_index == str(index_t)) & (df_sij.target_nucleotide==neucl_t)]
+        df_esc  = df_poly[(df_poly.polymorphic_index==site_i)& (df_poly.nucleotide == nuc_i)]
+        df_ds   = df_sij[(df_sij.target_polymorphic_index == str(site_i)) & (df_sij.target_nucleotide==nuc_i)]
 
         HXB2_in = df_esc.iloc[0].HXB2_index
-        new_var.append(str(HXB2_in)+neucl_t)
+        var_name.append(str(HXB2_in)+nuc_i)
 
         for df_iter, df_entry in df_esc.iterrows():
             if df_entry.polymorphic_index not in high_var:
@@ -1296,19 +1312,21 @@ def plot_CH470_5(**pdata):
             else:
                 hig_traj.append([df_entry['f_at_%d' % t] for t in times])
 
-        ds_vec = []
-        for ii in range(len(variants)):
-            index = int(variants[ii].split('_')[0])
-            neucl = variants[ii].split('_')[-1]
-            if ii == i:
+        ds_vec = [] # s_ij values for each linked variant for index i
+        for j in range(len(variants)):
+            site_j = int(variants[j].split('_')[0])
+            nuc_j  = variants[j].split('_')[-1]
+            if j == i:
                 ds_vec.append(0)
             else:
-                ds_vec.append(df_ds[(df_ds.mask_polymorphic_index==str(index)) & (df_ds.mask_nucleotide==neucl)].iloc[0].effect)
-        for ii in range(len(epitope)):
+                ds_vec.append(df_ds[(df_ds.mask_polymorphic_index==str(site_j)) & (df_ds.mask_nucleotide==nuc_j)].iloc[0].effect)
+        
+        for ii in range(len(epitopes)):
             index_m = 'epi'+ str(ii)
             ds_vec.append(df_ds[(df_ds.mask_polymorphic_index==index_m) & (df_ds.mask_nucleotide=='polypart')].iloc[0].effect)
         ds_matrix.append(ds_vec)
 
+    '''Find sc values for variants that need to be texted'''
     for i in range(len(note_var)):
         index   = int(note_var[i].split('_')[0])
         neucleo = note_var[i].split('_')[-1]
@@ -1316,15 +1334,13 @@ def plot_CH470_5(**pdata):
         df_esc  = df_poly[(df_poly.polymorphic_index==index)& (df_poly.nucleotide == neucleo)]
 
         HXB2_i  = df_esc.iloc[0].HXB2_index
-        new_note.append(str(HXB2_i)+neucleo)
+        text_name.append(str(HXB2_i)+neucleo)
 
         for df_iter, df_entry in df_esc.iterrows():
-            var_note.append([df_entry.sc_MPL,df_entry.sc_old])
+            text_sc.append([df_entry.sc_MPL,df_entry.sc_old])
 
     # PLOT FIGURE
-
     ## set up figure grid
-
     w     = DOUBLE_COLUMN
     goldh = w/1.8
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
@@ -1336,7 +1352,7 @@ def plot_CH470_5(**pdata):
 
     box_ss   = dict(left=0.10, right=0.45, bottom=box_t-box_y, top=box_t)
     box_traj = dict(left=0.10, right=0.45, bottom=box_b, top=box_t-box_y-box_dy)
-    box_sij  = dict(left=0.53, right=0.95, bottom=0.12, top=0.75)
+    box_sij  = dict(left=0.53, right=0.95, bottom=0.22, top=0.75)
 
     gs_ss   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_ss)
     gs_traj = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_traj)
@@ -1349,7 +1365,7 @@ def plot_CH470_5(**pdata):
     dx = -0.05
     dy =  0.04
 
-    var_c = sns.husl_palette(len(var_tag)+len(hig_traj))
+    var_c = sns.husl_palette(len(epi_name)+len(hig_traj))
     traj_c = [var_c[-2],var_c[-1]]
 
     ## a -- inferred selection coefficients with VS. without binary trait term
@@ -1375,28 +1391,28 @@ def plot_CH470_5(**pdata):
         mp.plot(type='scatter', ax=ax_ss, x=[[var_snew[i]]], y=[[var_sold[i]]], colors=[C_NEU],plotprops=scatterprops, **pprops)
 
     scatterprops['alpha'] = 0.8
-    for i in range(len(epi_snew)):
-        for j in range(len(epi_snew[i])):
-            mp.plot(type='scatter', ax=ax_ss, x=[[epi_snew[i][j]]], y=[[epi_sold[i][j]]], colors=[var_c[i]],plotprops=scatterprops, **pprops)
+    for i in range(len(esc_snew)):
+        for j in range(len(esc_snew[i])):
+            mp.plot(type='scatter', ax=ax_ss, x=[[esc_snew[i][j]]], y=[[esc_sold[i][j]]], colors=[var_c[i]],plotprops=scatterprops, **pprops)
 
     traj_legend_x  = 0.014
     traj_legend_dy = -0.003
-    y0             = -0.0075
+    y0             = -0.0045
     dx0            = 0.002
-    traj_legend_y  = [y0, y0 + traj_legend_dy ,y0 + traj_legend_dy*2]
+    traj_legend_y = [y0 + traj_legend_dy*k for k in range(len(epi_name))]
     scatterprops['s'] = SMALLSIZEDOT*0.8
-    for k in range(len(var_tag)):
-        traj_legend_k = 'Escape variants in epitope '+var_tag[k]
+    for k in range(len(epi_name)):
+        traj_legend_k = 'Escape variants in epitope '+epi_name[k]
         mp.plot(type='scatter', ax=ax_ss, x=[[traj_legend_x-dx0]], y=[[traj_legend_y[k]]], colors=[var_c[k]],plotprops=scatterprops, **pprops)
         ax_ss.text(traj_legend_x, traj_legend_y[k], traj_legend_k, ha='left', va='center', **DEF_LABELPROPS)
 
-    mp.plot(type='scatter', ax=ax_ss, x=[[traj_legend_x-dx0]], y=[[y0 + traj_legend_dy*3]], colors=[C_NEU],plotprops=scatterprops, **pprops)
-    ax_ss.text(traj_legend_x, y0 + traj_legend_dy*3, 'Not escape variants', ha='left', va='center', **DEF_LABELPROPS)
+    mp.plot(type='scatter', ax=ax_ss, x=[[traj_legend_x-dx0]], y=[[y0 + traj_legend_dy*(len(epi_name))]], colors=[C_NEU],plotprops=scatterprops, **pprops)
+    ax_ss.text(traj_legend_x, y0 + traj_legend_dy*(len(epi_name)), 'Not escape variants', ha='left', va='center', **DEF_LABELPROPS)
 
     ddx = -0.0001
     ddy =  0.0025
-    for i in range(len(var_note)):
-        ax_ss.text(var_note[i][0]+ddx, var_note[i][1]+ddy, new_note[i], ha='center', va='center', **DEF_LABELPROPS)
+    for i in range(len(text_sc)):
+        ax_ss.text(text_sc[i][0]+ddx, text_sc[i][1]+ddy, text_name[i], ha='center', va='center', **DEF_LABELPROPS)
 
     ax_ss.text(box_ss['left']+dx, box_ss['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
@@ -1455,6 +1471,8 @@ def plot_CH470_5(**pdata):
     site_rec_props = dict(height=1, width=1, ec=None, lw=AXWIDTH/2, clip_on=False)
     rec_patches    = []
 
+    '''Get color and set the rectangle position''' 
+    '''s_ij part'''
     for i in range(len(ds_matrix)):
         for j in range(len(ds_matrix[i])):
             temp_ds = ds_matrix[i][j]
@@ -1473,13 +1491,14 @@ def plot_CH470_5(**pdata):
     rec_patches.append(matplotlib.patches.Rectangle(xy=(0, 1), **individal_rec_props))
     rec_patches.append(matplotlib.patches.Rectangle(xy=(len(ds_matrix)+0.3, 1), **epitope_rec_props))
 
+    '''legend part, ranged from -0.02 to 0.02'''
     for i in range(9):
-        t = i/4 - 1
+        t = i/4 - 1 # the first i correspond to coefficient -0.02
         if t>0:
             c = hls_to_rgb(0.02, 0.53 * t + 1. * (1 - t), 0.83)
         else:
             c = hls_to_rgb(0.58, 0.53 * np.fabs(t) + 1. * (1 - np.fabs(t)), 0.60)
-        rec = matplotlib.patches.Rectangle(xy=(i+2, 12.5), fc=c, **site_rec_props)
+        rec = matplotlib.patches.Rectangle(xy=(i+2.5, 12.5), fc=c, **site_rec_props)
         rec_patches.append(rec)
 
     for patch in rec_patches:
@@ -1487,26 +1506,26 @@ def plot_CH470_5(**pdata):
 
     txtprops = dict(ha='right', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL)
     for i in range(len(ds_matrix)):
-        ax_sij.text(-0.2, len(ds_matrix) - i + 0.5, '%s' % new_var[i], **txtprops)
+        ax_sij.text(-0.2, len(ds_matrix) - i + 0.5, '%s' % var_name[i], **txtprops)
 
     txtprops = dict(ha='center', va='top', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, rotation=90)
     for i in range(len(ds_matrix)):
-        ax_sij.text(i + 0.5, 0.8, '%s' % new_var[i], **txtprops)
-    for i in range(len(var_tag)):
-        ax_sij.text(len(ds_matrix) + i + 0.8, 0.8, '%s' % var_tag[i], **txtprops)
+        ax_sij.text(i + 0.5, 0.8, '%s' % var_name[i], **txtprops)
+    for i in range(len(epi_name)):
+        ax_sij.text(len(ds_matrix) + i + 0.8, 0.8, '%s' % epi_name[i], **txtprops)
 
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, clip_on=False)
-    ax_sij.text(6.5, -1, 'Variant $i$', **txtprops)
+    ax_sij.text(6.5, -1.4, 'Variant $i$', **txtprops)
     ax_sij.text(5.5,11.5, 'Most influential variants', **txtprops)
-    ax_sij.text(11.8,11.5, 'Epitopes', **txtprops)
+    ax_sij.text(12.8,11.5, 'Epitopes', **txtprops)
 
     y_label = 13.8
-    ax_sij.text(  2.5, y_label,   2, **txtprops)
-    ax_sij.text(  4.5, y_label,   1, **txtprops)
-    ax_sij.text(  6.5, y_label,   0, **txtprops)
-    ax_sij.text(  8.5, y_label,  -2, **txtprops)
-    ax_sij.text( 10.5, y_label,  -2, **txtprops)
-    ax_sij.text(  6.5, y_label+1, 'Effect of variant $i$ on inferred\nselection coefficient '+' $\hat{s}_j$'+\
+    ax_sij.text(  3, y_label,  -2, **txtprops)
+    ax_sij.text(  5, y_label,  -1, **txtprops)
+    ax_sij.text(  7, y_label,   0, **txtprops)
+    ax_sij.text(  9, y_label,   1, **txtprops)
+    ax_sij.text( 11, y_label,   2, **txtprops)
+    ax_sij.text(  7, y_label+1, 'Effect of variant $i$ on inferred\nselection coefficient '+' $\hat{s}_j$'+\
                           ', $\Delta \hat{s}_{ij}$ (%)', ha='center', va='center', **DEF_LABELPROPS)
 
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, rotation=90)
@@ -1650,44 +1669,62 @@ class Result:
     escape_TF: List[bool]
 
 def AnalyzeData(tag):
-    df_info = pd.read_csv('data/HIV/analysis/%s-analyze.csv' %tag, comment='#', memory_map=True)
-    seq     = np.loadtxt('data/HIV/input/sequence/%s-poly-seq2state.dat'%tag)
+    df_info  = pd.read_csv('data/HIV/analysis/%s-analyze.csv' %tag, comment='#', memory_map=True)
+    seq      = np.loadtxt('data/HIV/input/sequence/%s-poly-seq2state.dat'%tag)
 
-    """get raw time points"""
+    """Get raw time points"""
     times = []
     for i in range(len(seq)):
         times.append(seq[i][0])
     uniq_t = np.unique(times)
 
-    """get variants number and sequence length"""
+    """Get variants number and sequence length"""
     seq_length = len(seq[0])-2
 
-    """get special sites and escape sites"""
-    # get all epitopes for one tag
-    df_rows = df_info[df_info['epitope'].notna()]
-    unique_epitopes = df_rows['epitope'].unique()
+    """Get escape information"""
+    escape_group  = [] # binary trait group, the corresponding epitope is independent
+    escape_TF     = [] # corresponding wild type or synonymous mutant nucleotide
 
-    min_n = 2 # the least escape sites a trait group should have (more than min_n)
-    special_sites = [] # special site considered as time-varying site but not escape site
-    escape_group  = [] # escape group (each group should have more than 2 escape sites)
-    escape_TF     = [] # corresponding wild type nucleotide
-    for epi in unique_epitopes:
-        df_e = df_rows[(df_rows['epitope'] == epi) & (df_rows['escape'] == True)] # find all escape mutation for one epitope
-        unique_sites = df_e['polymorphic_index'].unique()
+    try:
+        df_trait = pd.read_csv('data/HIV/group/escape_group-%s.csv' %tag, comment='#', memory_map=True)
+        # get all binary traits for one tag
+        df_rows = df_trait[df_trait['epitope'].notna()]
+        unique_traits = df_rows['epitope'].unique()
 
-        if len(unique_sites) <= min_n:
-            special_sites.append(unique_sites)
-        else:
+        """Get binary sites"""
+        for epi in unique_traits:
+            # collect all escape sites for one binary trait
+            df_e = df_rows[(df_rows['epitope'] == epi)] # find all escape mutation for this epitope
+            unique_sites = df_e['polymorphic_index'].unique()
+            unique_sites = [int(site) for site in unique_sites]
             escape_group.append(list(unique_sites))
-            tf_values = []
-            for site in unique_sites:
-                tf_value = df_e[df_e['polymorphic_index'] == site]['TF'].values
-                tf_values.append(NUC.index(tf_value[0]))
-            escape_TF.append(tf_values)
+        
+        """Get special sites and TF sequence"""
+        df_epi = df_info[(df_info['epitope'].notna()) & (df_info['escape'] == True)]
+        nonsy_sites = df_epi['polymorphic_index'].unique() # all sites can contribute to epitope
+        
+        for n in range(len(escape_group)):
+            escape_TF_n = []
+            for site in escape_group[n]:
+                # remove escape sites to find special sites
+                index = np.where(nonsy_sites == site)
+                nonsy_sites = np.delete(nonsy_sites, index)
 
-    special_sites = [item for sublist in special_sites for item in sublist]
+                # find the corresponding TF
+                escape_TF_site = []
+                df_TF = df_info[(df_info['polymorphic_index'] == site) & (df_info['escape'] == False)]
+                for i in range(len(df_TF)):
+                    TF = df_TF.iloc[i].nucleotide
+                    escape_TF_site.append(int(NUC.index(TF)))
+                escape_TF_n.append(escape_TF_site)
+            escape_TF.append(escape_TF_n)
+        
+    except FileNotFoundError:
+        df_epi = df_info[(df_info['epitope'].notna()) & (df_info['escape'] == True)]
+        # since no traits, all nonsy_sites contribute to dependent epitopes
+        nonsy_sites = df_epi['polymorphic_index'].unique() 
 
-    return Result(seq_length,special_sites,uniq_t,escape_group,escape_TF)
+    return Result(seq_length,nonsy_sites,uniq_t,escape_group,escape_TF)
 
 def getSC(tag):
 
@@ -1724,13 +1761,13 @@ def getEC(tag):
     return ECMatrix
 
 def getFitness(tag):
-    seq      = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    seq       = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
 
-    result   = AnalyzeData(tag)
+    result    = AnalyzeData(tag)
     traitsite = result.escape_group
-    polyseq  = result.escape_TF
-    s_sites  = result.special_sites
-    uniq_t   = result.uniq_t
+    polyseq   = result.escape_TF
+    s_sites   = result.special_sites
+    uniq_t    = result.uniq_t
 
     times = []
     for i in range(len(seq)):
@@ -1738,7 +1775,7 @@ def getFitness(tag):
 
     SCMatrix = getSC(tag)
     ECMatrix = getEC(tag)
-    FitAll   = np.zeros((2,len(uniq_t)))# 0:total fitness, 1: fitness increase from escape (group+special sites)
+    FitAll   = np.zeros((2,len(uniq_t)))# 0:total fitness, 1: fitness increase due to escape (group+special sites)
     CountAll = np.zeros(len(uniq_t))    # population number at different times
     for t in range(len(uniq_t)):
         tid = times==uniq_t[t]
@@ -1748,23 +1785,37 @@ def getFitness(tag):
         counts = np.sum(cout_t)
 
         fit_a = 0 # total fitness
-        fit_e = 0 # fitness for escape part
+        fit_e = 0 # fitness contribution due to escape
 
         for i in range(len(seq_t)):
-            # fitness contribution from individual selection
-            fitness = 1
+            # Average fitness (individual term + escape term)
+            fitness   = 1  
+            
+            # Average fitness contribution due to escape (independent epitopes + dependent epitopes)
+            # Independent epitopes : trait coefficients for that traits
+            # Dependent epitopes   : selection coefficients for special sites
+            fitness_e = 0  
+
+            # Fitness contribution from individual selection
             for j in range(len(seq_t[0])):
                 fitness += SCMatrix[j,int(seq_t[i][j])]
 
-            fitness_e = 0
-            # fitness contribution from escape group
+            # Fitness contribution from escape sites
+            # Escape fitness contribution due to escape sites
             for ii in range(len(traitsite)):
-                poly_value = sum([abs(seq_t[i][int(traitsite[ii][jj])]-polyseq[ii][jj]) for jj in range(len(traitsite[ii]))])
-                if poly_value > 0:
+
+                Mutant = False
+                for jj in range(len(traitsite[ii])):
+                    if seq_t[i][int(traitsite[ii][jj])] not in polyseq[ii][jj]:
+                        Mutant = True
+                        break
+                                
+                if Mutant:
                     fitness   += ECMatrix[ii]
                     fitness_e += ECMatrix[ii]
 
-            # fitness contribution from special sites
+            # Fitness contribution from special sites
+            # Escape fitness contribution due to special sites
             for jj in s_sites:
                 fitness_e += SCMatrix[jj,int(seq_t[i][jj])]
 
@@ -1831,8 +1882,13 @@ def getFitnessReversion(tag):
 
             # fitness contribution from escape group
             for ii in range(len(traitsite)):
-                poly_value = sum([abs(seq_t[i][int(traitsite[ii][jj])]-polyseq[ii][jj]) for jj in range(len(traitsite[ii]))])
-                if poly_value > 0:
+                Mutant = False
+                for jj in range(len(traitsite[ii])):
+                    if seq_t[i][int(traitsite[ii][jj])] not in polyseq[ii][jj]:
+                        Mutant = True
+                        break
+                                
+                if Mutant:
                     fitness   += ECMatrix[ii]
 
             fit_a += fitness*cout_t[i]
@@ -2290,8 +2346,11 @@ def plot_trait_site_reversion(**pdata):
     sc_all_new = [] # escape mutations
     sc_rev_new = [] # escape mutations that are also reversions
     for tag in tags:
-        df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
-        df_epitope = df_epitope[df_epitope['escape'] == True]
+        try:
+            df_epitope = pd.read_csv('%s/group/escape_group-%s.csv'%(HIV_DIR,tag), comment='#', memory_map=True)
+        except FileNotFoundError:
+            continue
+    
         df_reversion = df_epitope[(df_epitope['nucleotide'] == df_epitope['consensus'])]
 
         for i in range(len(df_epitope)):
@@ -2302,16 +2361,27 @@ def plot_trait_site_reversion(**pdata):
             sc_rev_old.append(df_reversion.iloc[i].sc_old)
             sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
 
-    # positive_old = [i for i in sc_rev_old if i > 0]
-    # positive_new = [i for i in sc_rev_new if i > 0]
+    pos_old = [i for i in sc_all_old if i > 0.01]
+    pos_new = [i for i in sc_all_new if i > 0.01]
 
-    # print(f'Totally {len(sc_all_old)} escape mutations and', end=' ')
-    # print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reversion mutations')
+    rev_pos_old = [i for i in sc_rev_old if i > 0]
+    rev_pos_new = [i for i in sc_rev_new if i > 0]
+
+    print(f'Totally {len(sc_all_old)} escape mutations and', end=' ')
+    print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reversion mutations')
+    
+    print('For all escape mutations:')
+    print(f'Before counting escape term, {len(pos_old)}', end='')
+    print(f' ({len(pos_old)/len(sc_all_old)*100:.2f}%) escape mutations are substantially beneficial (s>1%).')
+    print(f'After counting escape term, only {len(pos_new)}', end='')
+    print(f' ({len(pos_new)/len(sc_all_new)*100:.2f}%) escape mutations are substantially beneficial.')
+
     # print('For reversion mutations:')
-    # print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
-    # print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all escape mutations')
-    # print(f'After counting escape term, only {len(positive_new)} reversion mutations are positive', end='')
-    # print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all escape mutations')
+    # print(f'Before counting escape term, {len(rev_pos_old)}', end='')
+    # print(f' ({len(rev_pos_old)/len(sc_all_old)*100:.2f}%) reversion mutations are positive.')
+    # print(f'After counting escape term, only {len(rev_pos_new)}', end='')
+    # print(f' ({len(rev_pos_new)/len(sc_all_new)*100:.2f}%)reversion mutations are positive.')
+
 
     # PLOT FIGURE
     ## set up figure grid
@@ -2585,16 +2655,16 @@ def plot_site_reversion(**pdata):
             sc_rev_old.append(df_reversion.iloc[i].sc_old)
             sc_rev_new.append(df_reversion.iloc[i].sc_MPL)
 
-    # positive_old = [i for i in sc_rev_old if i > 0]
-    # positive_new = [i for i in sc_rev_new if i > 0]
+    # rev_pos_old = [i for i in sc_rev_old if i > 0]
+    # rev_pos_new = [i for i in sc_rev_new if i > 0]
 
     # print(f'Totally {len(sc_all_old)} mutations and', end=' ')
     # print(f'{len(sc_rev_old)} ({len(sc_rev_old)/len(sc_all_old)*100:.2f}%) reversion mutations')
     # print('For reversion mutations:')
-    # print(f'Before counting escape term, {len(positive_old)} reversion mutations are positive', end='')
-    # print(f', which is {len(positive_old)/len(sc_all_old)*100:.2f}% compared to all mutations')
-    # print(f'After counting escape term, {len(positive_new)} reversion mutations are positive', end='')
-    # print(f', {len(positive_new)/len(sc_all_new)*100:.2f}% compared to all mutations')
+    # print(f'Before counting escape term, {len(rev_pos_old)} reversion mutations are positive', end='')
+    # print(f', which is {len(rev_pos_old)/len(sc_all_old)*100:.2f}% compared to all mutations')
+    # print(f'After counting escape term, {len(rev_pos_new)} reversion mutations are positive', end='')
+    # print(f', {len(rev_pos_new)/len(sc_all_new)*100:.2f}% compared to all mutations')
 
     # PLOT FIGURE
     ## set up figure grid
@@ -3644,7 +3714,7 @@ def plot_virus_load(**pdata):
                'hide':        ['bottom','left']}
 
     for i in range(len(tags)):
-        yy_i = 9.5 - 0.65 * i
+        yy_i = 9.5 - 0.55 * i
 
         ax_label.text(4, yy_i, '%s' % tags[i], ha='left', va='center', **DEF_LABELPROPS)
 

@@ -26,6 +26,6 @@ data/HIV/output/7*/
 data/simulation/time-varying
 data/HIV/rx
 src/rx*
-data/HIV/covariance
-data/old
+data/HIV/output/covariance
+data/HIV/old
 *.tar.gz

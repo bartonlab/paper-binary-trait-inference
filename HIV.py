@@ -237,7 +237,7 @@ def get_trait(tag):
                 escape_TF_epi.append(tf_values)
             escape_TF.append(escape_TF_epi)
 
-    return escape_group, escape_TF,epinames
+    return escape_group, escape_TF, epinames
 
 def find_nons_mutations(tag):
     '''
@@ -444,7 +444,7 @@ def determine_dependence(tag):
 
     # obtain raw sequence data
     seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
-    escape_group, escape_TF,epinames = get_trait(tag)
+    escape_group, escape_TF, epinames = get_trait(tag)
 
     # information for escape group
     seq_length   = len(seq[0])-2
@@ -454,7 +454,10 @@ def determine_dependence(tag):
     sample_times = np.unique(times)
 
     ne           = len(escape_group)
-
+    
+    if ne == 0:
+        return
+    
     # obtain sequence data and frequencies
     sVec,nVec,eVec = getSequence(seq,escape_TF,escape_group)
     x_length,muVec = getMutantS(seq_length, sVec)
