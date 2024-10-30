@@ -1345,22 +1345,30 @@ def plot_CH470_5(**pdata):
     goldh = w/1.8
     fig   = plt.figure(figsize=(w, goldh),dpi=1000)
 
+    box_l  = 0.10
+    box_r  = 0.95
     box_t  = 0.94
     box_b  = 0.09
-    box_y  = (w/goldh) * (0.45 - 0.10)
+    box_x  = 0.30
+    box_y  = (w/goldh) * box_x
     box_dy = 0.10
+    box_dx = 0.08
 
-    box_ss   = dict(left=0.10, right=0.45, bottom=box_t-box_y, top=box_t)
-    box_traj = dict(left=0.10, right=0.45, bottom=box_b, top=box_t-box_y-box_dy)
-    box_sij  = dict(left=0.53, right=0.95, bottom=0.22, top=0.75)
+
+    box_ss   = dict(left=box_l, right=box_l+box_x, bottom=box_t-box_y, top=box_t)
+    box_traj = dict(left=box_l, right=box_l+box_x, bottom=box_b, top=box_t-box_y-box_dy)
+    box_sij  = dict(left=box_l+box_x+box_dx, right=box_r, bottom=box_t-box_y-0.013, top=box_t)
+    box_bar  = dict(left=box_l+box_x+box_dx, right=box_r, bottom=box_b, top=box_t-box_y-1.5*box_dy)
 
     gs_ss   = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_ss)
     gs_traj = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_traj)
     gs_sij  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_sij)
+    gs_bar  = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_bar)
 
     ax_ss   =  plt.subplot(gs_ss[0, 0])
     ax_traj =  plt.subplot(gs_traj[0, 0])
     ax_sij  =  plt.subplot(gs_sij[0, 0])
+    ax_bar  =  plt.subplot(gs_bar[0, 0])
 
     dx = -0.05
     dy =  0.04
@@ -1395,9 +1403,9 @@ def plot_CH470_5(**pdata):
         for j in range(len(esc_snew[i])):
             mp.plot(type='scatter', ax=ax_ss, x=[[esc_snew[i][j]]], y=[[esc_sold[i][j]]], colors=[var_c[i]],plotprops=scatterprops, **pprops)
 
-    traj_legend_x  = 0.014
-    traj_legend_dy = -0.003
-    y0             = -0.0045
+    traj_legend_x  = 0.008
+    traj_legend_dy = -0.0035
+    y0             = -0.0025
     dx0            = 0.002
     traj_legend_y = [y0 + traj_legend_dy*k for k in range(len(epi_name))]
     scatterprops['s'] = SMALLSIZEDOT*0.8
@@ -1441,8 +1449,8 @@ def plot_CH470_5(**pdata):
         mp.plot(type='line', ax=ax_traj, x=xdat, y=ydat, colors=[traj_c[j]], **pprops)
 
     traj_legend_x  =  350
-    traj_legend_dy = -0.22
-    traj_legend_y  = [0.52, 0.52 + traj_legend_dy, 0.52 + 2*traj_legend_dy]
+    traj_legend_dy = -0.12
+    traj_legend_y  = [0.42, 0.42 + traj_legend_dy, 0.42 + 2*traj_legend_dy]
     traj_legend_t  = ['Other variants','974A', '3951C']
     for k in range(len(traj_legend_y)):
         yy = traj_legend_y[k]
@@ -1458,7 +1466,7 @@ def plot_CH470_5(**pdata):
 
     pprops = { 'colors': [BKCOLOR],
                'xlim': [0, len(ds_matrix[0]) + 1],
-               'ylim': [1, len(ds_matrix)+2],
+               'ylim': [1, len(ds_matrix)+1],
                'xticks': [],
                'yticks': [],
                'plotprops': dict(lw=0, s=0.1*SMALLSIZEDOT, marker='o', clip_on=False),
@@ -1484,6 +1492,7 @@ def plot_CH470_5(**pdata):
             rec = matplotlib.patches.Rectangle(xy=(j + (j>=len(ds_matrix)) * 0.3, len(ds_matrix) - i), fc=c, **site_rec_props)
             rec_patches.append(rec)
 
+    '''box for heatmap'''
     individal_rec_props = dict(height=len(ds_matrix), width=len(ds_matrix),
                              ec=BKCOLOR,fc='none', lw=AXWIDTH/2, clip_on=False)
     epitope_rec_props   = dict(height=len(ds_matrix), width=len(ds_matrix[0]) - len(ds_matrix),
@@ -1491,19 +1500,10 @@ def plot_CH470_5(**pdata):
     rec_patches.append(matplotlib.patches.Rectangle(xy=(0, 1), **individal_rec_props))
     rec_patches.append(matplotlib.patches.Rectangle(xy=(len(ds_matrix)+0.3, 1), **epitope_rec_props))
 
-    '''legend part, ranged from -0.02 to 0.02'''
-    for i in range(9):
-        t = i/4 - 1 # the first i correspond to coefficient -0.02
-        if t>0:
-            c = hls_to_rgb(0.02, 0.53 * t + 1. * (1 - t), 0.83)
-        else:
-            c = hls_to_rgb(0.58, 0.53 * np.fabs(t) + 1. * (1 - np.fabs(t)), 0.60)
-        rec = matplotlib.patches.Rectangle(xy=(i+2.5, 12.5), fc=c, **site_rec_props)
-        rec_patches.append(rec)
-
     for patch in rec_patches:
         ax_sij.add_artist(patch)
 
+    '''name for each variant and epitope'''
     txtprops = dict(ha='right', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL)
     for i in range(len(ds_matrix)):
         ax_sij.text(-0.2, len(ds_matrix) - i + 0.5, '%s' % var_name[i], **txtprops)
@@ -1517,21 +1517,51 @@ def plot_CH470_5(**pdata):
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, clip_on=False)
     ax_sij.text(6.5, -1.4, 'Variant $i$', **txtprops)
     ax_sij.text(5.5,11.5, 'Most influential variants', **txtprops)
-    ax_sij.text(12.8,11.5, 'Epitopes', **txtprops)
-
-    y_label = 13.8
-    ax_sij.text(  3, y_label,  -2, **txtprops)
-    ax_sij.text(  5, y_label,  -1, **txtprops)
-    ax_sij.text(  7, y_label,   0, **txtprops)
-    ax_sij.text(  9, y_label,   1, **txtprops)
-    ax_sij.text( 11, y_label,   2, **txtprops)
-    ax_sij.text(  7, y_label+1, 'Effect of variant $i$ on inferred\nselection coefficient '+' $\hat{s}_j$'+\
-                          ', $\Delta \hat{s}_{ij}$ (%)', ha='center', va='center', **DEF_LABELPROPS)
+    ax_sij.text(12.3,11.5, 'Epitopes', **txtprops)
 
     txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, rotation=90)
     ax_sij.text(-2.2, 7, 'Target variant $j$', **txtprops)
 
     ax_sij.text(box_sij['left']+dx, box_ss['top']+dy, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    
+    ## d -- bar plot for s_ij heatmap
+    pprops = { 'colors': [BKCOLOR],
+               'xlim': [0, len(ds_matrix[0]) + 1],
+               'ylim': [1, 4],
+               'xticks': [],
+               'yticks': [],
+               'plotprops': dict(lw=0, s=0.1*SMALLSIZEDOT, marker='o', clip_on=False),
+               'ylabel': '',
+               'theme': 'open',
+               'hide' : ['top', 'bottom', 'left', 'right'] }
+
+    mp.plot(type='scatter', ax=ax_bar, x=[[5]], y=[[2.4]], **pprops)
+
+    '''legend part, ranged from -0.02 to 0.02'''
+    rec_patches    = []
+    for i in range(9):
+        t = i/4 - 1 # the first i correspond to coefficient -0.02
+        if t>0:
+            c = hls_to_rgb(0.02, 0.53 * t + 1. * (1 - t), 0.83)
+        else:
+            c = hls_to_rgb(0.58, 0.53 * np.fabs(t) + 1. * (1 - np.fabs(t)), 0.60)
+        rec = matplotlib.patches.Rectangle(xy=(i+2.5, 2.2), fc=c, **site_rec_props)
+        rec_patches.append(rec)
+
+    for patch in rec_patches:
+        ax_bar.add_artist(patch)
+
+    txtprops = dict(ha='center', va='center', color=BKCOLOR, family=FONTFAMILY, size=SIZELABEL, clip_on=False)
+
+    y_label = 1.7
+    ax_bar.text(  3, y_label,  -2, **txtprops)
+    ax_bar.text(  5, y_label,  -1, **txtprops)
+    ax_bar.text(  7, y_label,   0, **txtprops)
+    ax_bar.text(  9, y_label,   1, **txtprops)
+    ax_bar.text( 11, y_label,   2, **txtprops)
+    ax_bar.text(  7, y_label-1.3, 'Effect of variant $i$ on inferred\nselection coefficient '+' $\hat{s}_j$'+\
+                          ', $\Delta \hat{s}_{ij}$ (%)', ha='center', va='center', **DEF_LABELPROPS)
+
 
     # SAVE FIGURE
     plt.savefig('%s/fig5-CH470-5_linkage.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
