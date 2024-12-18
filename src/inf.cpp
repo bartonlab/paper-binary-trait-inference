@@ -305,6 +305,11 @@ void updateCovarianceIntegrate(double dg, // time step
 
             totalCov[(a * LL) + b] += dCov;
             totalCov[(b * LL) + a] += dCov;
+
+            if (std::abs(totalCov[(a * LL) + b]) < 1e-10){
+                totalCov[(a * LL) + b] = 0;
+                totalCov[(b * LL) + a] = 0;
+            }
         }
     }
 }

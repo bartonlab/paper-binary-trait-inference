@@ -8,6 +8,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
+import matplotlib.patheffects as pe
 
 from scipy import integrate
 import scipy.interpolate as sp_interpolate
@@ -220,23 +221,54 @@ def plot_example_mpl(**pdata):
                'nudgey':      1.1,
                'xlabel':      'Generation',
                'ylabel':      'Allele\nfrequency, ' + r'$x$',
-               'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1 },
+               'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
                'axoffset':    0.1,
                'theme':       'open' }
+    
+    merged_trait_site = [item for sublist in trait_site for item in sublist]
+    merged_trait      = sorted(merged_trait_site)
+    for k in range(n_ben+n_neu+n_del):
+        xdat = range(0, n_gen, dg)
+        ydat = x[k]
 
-    xdat = [range(0, n_gen, dg) for k in range(n_ben)]
-    ydat = [k for k in x[:n_ben]]
-    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_BEN_LT for k in range(len(x))], **pprops)
+        if k not in merged_trait:
+            pprops['plotprops']['alpha'] = 1.0
+            if k < n_ben:
+                color_k = C_BEN_LT
+            elif k > n_ben+n_neu:
+                color_k = C_DEL_LT
+            else:
+                color_k = C_NEU
+                pprops['plotprops']['alpha'] = 0.4
 
-    xdat = [range(0, n_gen, dg) for k in range(n_del)]
-    ydat = [k for k in x[n_ben+n_neu:]]
-    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_DEL_LT for k in range(len(x))], **pprops)
+        mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
 
-    xdat = [range(0, n_gen, dg) for k in range(n_neu)]
-    ydat = [k for k in x[n_ben:n_ben+n_neu]]
-    pprops['plotprops']['alpha'] = 0.4
-    mp.plot(type='line',ax=ax_tra1, x=xdat, y=ydat, colors = [C_NEU for k in range(len(x))], **pprops)
+    for k in merged_trait:
+        xdat = range(0, n_gen, dg)
+        ydat = x[k]
+        
+        pprops['plotprops']['alpha'] = 1.0
+        pprops['plotprops']['lw'] = SIZELINE*2.0
 
+        if k < n_ben:
+            color_k = C_BEN_LT
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[BKCOLOR], **pprops)
+        elif k > n_ben+n_neu:
+            color_k = C_DEL_LT
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[BKCOLOR], **pprops)
+        else:
+            color_k = C_NEU
+            pprops['plotprops']['alpha'] = 0.6
+            outline_color = '#505050'
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[outline_color], **pprops)
+            pprops['plotprops']['alpha'] = 0.4
+
+        pprops['plotprops']['lw'] = SIZELINE
+        if k == merged_trait[-1]:
+            mp.plot(type='line',ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
+        else:
+            mp.line(            ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
+    
     ax_tra1.text(box_tra1['left']+dx, box_tra1['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # b -- all trait trajectories together
@@ -286,8 +318,6 @@ def plot_example_mpl(**pdata):
 
     ## c -- individual beneficial/neutral/deleterious selection coefficients
 
-    sprops = { 'lw' : 0, 's' : 9., 'marker' : 'o' }
-
     pprops = { 'xlim':        [ -0.3,    4],
                'ylim':        [-0.05, 0.04],
                'yticks':      [-0.04, 0, 0.04],
@@ -308,16 +338,23 @@ def plot_example_mpl(**pdata):
         colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
         plotprops = DEF_ERRORPROPS.copy()
         plotprops['alpha'] = 1
+
         for i in range(n_coe1[k]):
             xdat = [k + np.random.normal(0, 0.08)]
             ydat = [s_inf[offset[k]+i]]
             yerr = np.sqrt(ds[offset[k]+i][offset[k]+i])
-            if i==n_coe1[k]-1 and k==len(n_coe1)-1:
-                mp.plot(type='error', ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], \
-                edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
-            else:
+            
+            if (offset[k]+i) not in merged_trait:
+                
+                plotprops['lw'] = SIZELINE
                 mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[c_coe1[k]], \
                 facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+        
+            else:
+
+                plotprops['lw'] = SIZELINE*1.5
+                mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[BKCOLOR], \
+                facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)    
 
     coef_legend_x  =  2.8
     coef_legend_d  = -0.15
@@ -333,6 +370,11 @@ def plot_example_mpl(**pdata):
     mp.line(ax=ax_coe1, x=[[coef_legend_x-0.21, coef_legend_x-0.09]], y=[[yy, yy]], \
     colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
     ax_coe1.text(coef_legend_x, yy, 'True \ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
+
+    yyy = 0.02 + 5.0 * coef_legend_dy
+    mp.plot(type='error', ax=ax_coe1, x=[[coef_legend_x+coef_legend_d]], y=[[yyy]], \
+                 edgecolor=[BKCOLOR], facecolor=['#FFFFFF'], plotprops=plotprops, **pprops)
+    ax_coe1.text(coef_legend_x, yyy, 'Trait mutation', ha='left', va='center', **DEF_LABELPROPS)
 
     ax_coe1.text(box_coe1['left']+dx, box_coe1['top']+0.04, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
@@ -350,7 +392,6 @@ def plot_example_mpl(**pdata):
                'theme':       'open',
                'hide':        ['bottom'] }
 
-    n_coe2    = []
     c_coe2    = []
     c_coe2_lt = []
     offset    = n_ben+n_neu+n_del
@@ -394,6 +435,7 @@ def plot_example_mpl(**pdata):
     ax_coe2.text(box_coe2['left']+dx, box_coe2['top']+0.04, 'd'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
     # # e -- inset fitness model picture
+
     # use mpimg.imread to read the image
     img = mpimg.imread('%s/fitness_model.png'%FIG_DIR)
     # ax_fit.imshow(img,aspect='equal') # display the image
@@ -408,13 +450,13 @@ def plot_example_mpl(**pdata):
     ax_fit.imshow(img, extent=[x_min, x_max, y_min, y_max])
 
     # adjust the x-axis range to make the image fit the left side of the figure
-    ax_fit.set_xlim(0, width*1.6)  # the image fit the left side of the figure
+    ax_fit.set_xlim(0, width*1.0)  # the image fit the left side of the figure
     ax_fit.set_ylim(-height / 2, height / 2)  # the image fit the middle side of the figure
 
     # close the axis
     ax_fit.axis('off')
 
-    ax_fit.text(box_fit['left']+0.02, box_fit['top']-0.02, 'e'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    ax_fit.text(box_fit['left']+0.01, box_fit['top']-0.02, 'e'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
     # SAVE FIGURE
     if show_fig:
         plt.savefig('%s/fig1-sim.pdf' % (FIG_DIR), facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
@@ -856,8 +898,8 @@ def plot_histogram_fraction_HIV(**pdata):
     pprops = { 'xlim'        : [ -0.05,  0.30],
                'xticks'      : [ -0.05,     0,  0.05, 0.1 , 0.15,  0.2, 0.25, 0.30],
                'xticklabels' : [    -5,     0,    5,   10,   15,    20,   25,   30],
-               'ylim'        : [0., 0.30],
-               'yticks'      : [0., 0.15, 0.30],
+               'ylim'        : [0., 0.20],
+               'yticks'      : [0., 0.10, 0.20],
                'xlabel'      : 'Inferred escape coefficient, ' + r'$\hat{s}$ ' +'(%)',
                'ylabel'      : 'Frequency',
                'bins'        : np.arange(-0.05, 0.30, 0.01),
@@ -1088,6 +1130,167 @@ def plot_CH470_3(**pdata):
     # SAVE FIGURE
     plt.savefig('%s/fig3-CH470-3.pdf' % FIG_DIR, facecolor = fig.get_facecolor(), edgecolor=None, **FIGPROPS)
     print('Figure saved as fig3-CH470-3.pdf')
+
+def plot_epitopes(**pdata):
+    """
+    epitope escape mutation frequencies, inferred escape coefficients.
+    """
+    # unpack data
+
+    tag           = pdata['tag']
+    traj_ticks    = pdata['traj_ticks']
+    tc_ticks      = pdata['tc_ticks']
+    tc_minorticks = pdata['tc_minorticks']
+
+    # process stored data
+
+    df_poly = pd.read_csv('%s/group/escape_group-%s.csv' % (HIV_DIR, tag), comment='#', memory_map=True)
+
+    times = [int(i.split('_')[-1]) for i in df_poly.columns if 'f_at_' in i]
+    times.sort()
+
+    epitope = df_poly['epitope'].unique()
+
+    var_tag   = []
+    traj_poly = []
+    poly_info = {}
+    var_tc    = []
+    var_traj  = []
+    var_color = []
+    for i in range(len(epitope)):
+        df_esc  = df_poly[(df_poly.epitope==epitope[i])]
+        df_row  = df_esc.iloc[0]
+        epi_nuc = ''.join(epitope[i])
+        p_tag = epi_nuc[0]+epi_nuc[-1]+str(len(epi_nuc))
+        p_c   = df_esc.iloc[0].tc_MPL
+        poly_info[p_tag] = p_c
+        traj_poly.append([df_row['xp_at_%d' % t] for t in times])
+        traj_indi = []
+        for df_iter, df_entry in df_esc.iterrows():
+            traj_indi.append([df_entry['f_at_%d' % t] for t in times])
+        var_traj.append(traj_indi)
+
+    var_c = sns.husl_palette(len(traj_poly))
+
+    # Sort by the value of inferred escape coefficients
+    poly_info_1 = sorted(poly_info.items(),key=lambda x: x[1],reverse=True)
+    poly_key = list(poly_info.keys())
+    for i in poly_info_1:
+        var_tag.append(i[0])
+        var_tc.append(i[1])
+        index_i = poly_key.index(i[0])
+        var_color.append(var_c[index_i])
+
+    # PLOT FIGURE
+
+    ## set up figure grid
+
+    w       = SINGLE_COLUMN
+    goldh   =  w /2
+    fig     = plt.figure(figsize=(w, goldh),dpi=1000)
+
+    box_traj = dict(left=0.17, right=0.95, bottom=0.57, top=0.90)
+    box_coef = dict(left=0.17, right=0.44, bottom=0.15, top=0.38)
+    box_lend = dict(left=0.55, right=0.95, bottom=0.15, top=0.38)
+
+    gs_traj = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_traj)
+    gs_coef = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_coef)
+    gs_lend = gridspec.GridSpec(1, 1, width_ratios=[1.0], height_ratios=[1.0], **box_lend)
+    ax_traj = plt.subplot(gs_traj[0, 0])
+    ax_coef = plt.subplot(gs_coef[0, 0])
+    ax_lend = plt.subplot(gs_lend[0, 0])
+
+    dx = -0.15
+    dy =  0.06
+
+    ## a -- trajectory plot
+
+    pprops = { 'xticks':      traj_ticks,
+               'yticks':      [0, 1.0],
+               'ylim':        [0, 0.33],
+               'yminorticks': [0.25, 0.5, 0.75],
+               'nudgey':      1.1,
+               'xlabel':      'Days after Fiebig I/II',
+               'ylabel':      'Variant frequency',
+               'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
+               'axoffset':    0.1,
+               'theme':       'open',
+               'combine'     : True}
+
+    for i in range(len(var_tag)):
+        pprops['plotprops']['alpha'] = 1
+        xdat = [times]
+        ydat = [traj_poly[i]]
+        mp.line(ax=ax_traj, x=xdat, y=ydat, colors=[var_c[i]], **pprops)
+        pprops['plotprops']['alpha'] = 0.4
+        for j in range(len(var_traj[i])):
+            ydat = [var_traj[i][j]]
+            if i == len(var_tag)-1:
+                mp.plot(type='line', ax=ax_traj, x=xdat, y=ydat, colors=[var_c[i]], **pprops)
+            else:
+                mp.line(             ax=ax_traj, x=xdat, y=ydat, colors=[var_c[i]], **pprops)
+
+    ax_traj.text(box_traj['left']+dx, box_traj['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+    # b -- escape coefficients inferred by MPL
+
+    hist_props = dict(lw=SIZELINE/2, width=0.4, align='center',alpha=0.8,
+                      orientation='vertical',edgecolor=[BKCOLOR for i in range(len(var_tag))])
+
+    bar_x  = [i+0.5 for i in range(len(var_tag))]
+    var_epi = []
+    for i in range(len(var_tag)):
+        var_epi.append(var_tag[i])
+    pprops = { 'colors':      [var_color],
+               'xlim':        [0, len(var_tag)],
+               'xticks'  :    bar_x,
+               'ylim':        [tc_ticks[0],  tc_ticks[-1]],
+               'yticks':      tc_ticks,
+               'yminorticks': tc_minorticks,
+               'yticklabels': [int(i*100) for i in tc_ticks],
+               'xticklabels': [k for k in var_epi],
+               'ylabel':      'Inferred escape\ncoefficient, '+r'$\hat{s}$'+' (%)',
+               'combine'     : True,
+               'plotprops'   : hist_props,
+               'axoffset'    : 0.1,
+               'theme':       'open'}
+
+    mp.plot(type='bar', ax=ax_coef,x=[bar_x], y=[var_tc], **pprops)
+
+    ax_coef.text(box_coef['left']+dx, box_coef['top']+dy, 'b'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+
+
+    # c -- legend
+
+    pprops = { 'xlim': [0,  5],
+               'ylim': [0,  5],
+               'xticks': [],
+               'yticks': [],
+               'plotprops':   {'lw': SIZELINE, 'ls': '-', 'alpha': 1.0 },
+               'theme': 'open',
+               'hide' : ['top', 'bottom', 'left', 'right'] }
+
+    traj_legend_x  =  2
+    traj_legend_y  = [1, 4]
+    traj_legend_t  = ['Escape\nfrequency','Individual \nallele frequency']
+
+    for k in range(len(traj_legend_y)):
+        ax_lend.text(traj_legend_x, traj_legend_y[k], traj_legend_t[k], ha='left', va='center', **DEF_LABELPROPS)
+
+    for k in range(len(var_c)):
+        x1 = traj_legend_x-0.7
+        x2 = traj_legend_x-0.1
+        y1 = traj_legend_y[0] + (1-k) * 0.4
+        y2 = traj_legend_y[1] + (1-k) * 0.4
+        pprops['plotprops']['alpha'] = 1
+        mp.plot(type='line',ax=ax_lend, x=[[x1, x2]], y=[[y1, y1]], colors=[var_color[k]], **pprops)
+        pprops['plotprops']['alpha'] = 0.4
+        mp.plot(type='line',ax=ax_lend, x=[[x1, x2]], y=[[y2, y2]], colors=[var_color[k]], **pprops)
+
+    #ax_lend.text(-1.5, 2.5, '3\' half-genome \nfor CH470', ha='left', va='center', **DEF_LABELPROPS)
+
+    # SAVE FIGURE
+    print(f'Figure saved as CH{tag[-5:]}.pdf')
 
 def plot_CH131_3(**pdata):
     """
@@ -2405,6 +2608,13 @@ def plot_trait_site_reversion(**pdata):
     print(f' ({len(pos_old)/len(sc_all_old)*100:.2f}%) escape mutations are substantially beneficial (s>1%).')
     print(f'After counting escape term, only {len(pos_new)}', end='')
     print(f' ({len(pos_new)/len(sc_all_new)*100:.2f}%) escape mutations are substantially beneficial.')
+
+    pos_old = [i for i in sc_all_old if i > 0]
+    pos_new = [i for i in sc_all_new if i > 0]
+    print(f'Before counting escape term, {len(pos_old)}', end='')
+    print(f' ({len(pos_old)/len(sc_all_old)*100:.2f}%) escape mutations are beneficial (s>0).')
+    print(f'After counting escape term, only {len(pos_new)}', end='')
+    print(f' ({len(pos_new)/len(sc_all_new)*100:.2f}%) escape mutations are beneficial.')
 
     # print('For reversion mutations:')
     # print(f'Before counting escape term, {len(rev_pos_old)}', end='')

@@ -8,6 +8,7 @@ import urllib.request
 from math import isnan
 import glob
 import subprocess
+from sympy import Matrix,nsimplify
 
 # GitHub
 MPL_DIR = 'src'
@@ -253,11 +254,13 @@ def find_nons_mutations(tag):
     TF_sequence = []
     for i in range(len(df_index)):
         TF_sequence.append(df_index.iloc[i].TF)
+    
     # alignment for polymorphic sites
     df_index_p  = df_index[df_index['polymorphic'].notna()]
     polymorphic_sites  = []
     for i in range(len(df_index_p)):
         polymorphic_sites.append(int(df_index_p.iloc[i].alignment))
+    
     # sequence for polymorphic sites
     seq = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
     poly_times = np.zeros(len(seq))
@@ -430,15 +433,120 @@ def get_allele_frequency(sVec,nVec,eVec,muVec,x_length):
 def diffusion_matrix_at_t(x_0, x_1, xx_0, xx_1, dt, C_int):
     x_length = len(x_0)
     for i in range(x_length):
-        C_int[i, i] += dt * (((3 - (2 * x_1[i])) * (x_0[i] + x_1[i])) - 2 * x_0[i] * x_0[i]) / 6
+        dcov = dt * (((3 - (2 * x_1[i])) * (x_0[i] + x_1[i])) - 2 * x_0[i] * x_0[i]) / 6
+        if abs(dcov) > 1:
+            C_int[i, i] += round(dcov)
+        if abs(C_int[i, i]) < 1:
+                C_int[i, i] = 0
+
         for j in range(int(i+1) ,x_length):
             dCov1 = -dt * (2 * x_0[i] * x_0[j] + 2 * x_1[i] * x_1[j] + x_0[i] * x_1[j] + x_1[i] * x_0[j]) / 6
             dCov2 =  dt * (xx_0[i,j] + xx_1[i,j]) / 2
+            dcov  = dCov1 + dCov2
 
-            C_int[i, j] += dCov1 + dCov2
-            C_int[j, i] += dCov1 + dCov2
+            if abs(dcov) > 1:
+                C_int[i, j] += round(dcov)
+                C_int[j, i] += round(dcov)
+
+            if abs(C_int[i, j]) < 1:
+                C_int[i, j] = 0
+                C_int[j, i] = 0
 
     return C_int
+
+def determine_dependence_test(tag):
+
+    # obtain raw sequence data
+    seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    escape_group, escape_TF, epinames = get_trait(tag)
+
+    # information for escape group
+    seq_length   = len(seq[0])-2
+    ne           = len(escape_group)
+    
+    if ne == 0:
+        f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
+        g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
+        ff = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
+        f.close()
+        g.close()
+        ff.close()
+        return
+    
+    # obtain sequence data and frequencies
+    sVec,nVec,eVec = getSequence(seq,escape_TF,escape_group)
+    x_length,muVec = getMutantS(seq_length, sVec)
+    x_length      += ne
+
+    # get all frequencies, 
+    # x: single allele frequency, xx: pair allele frequency
+    x,xx         = get_allele_frequency(sVec,nVec,eVec,muVec,x_length)
+
+    df_poly   = pd.read_csv('%s/interim/%s-poly.csv'%(HIV_DIR,tag), memory_map=True)
+
+    Independent = [True] * ne
+
+    for n in range(ne):
+        
+        n_index = []
+        # mutation inside this epitope
+        for nn in escape_group[n]:
+            df_i = df_poly[df_poly['polymorphic_index'] == nn]
+            for ii in range(len(df_i)):
+                if df_i.iloc[ii].escape == True:
+                    n_index.append(int(muVec[nn][NUC.index(df_i.iloc[ii].nucleotide)]))
+        n_mutations = len(n_index)
+        
+        # mutation has the same frequency with the binary trait
+        x_all = x.T
+        variants_name = []
+
+        # Individual locus part
+        for i in range(len(x_all)-ne):
+            if np.array_equal(x_all[i], x_all[x_length-ne+n]) or np.array_equal(x_all[i]+x_all[x_length-ne+n], np.ones(len(x))):
+                # correlated or anti-correlated 
+                # (sometimes one variant has more than 1 mutations, so we need to check anti_correlated)
+                if i not in n_index: # make sure the variant is outside this epitope
+                    n_index.append(i)
+                    
+                    # find the variant name
+                    result = np.where(muVec == i)
+                    variant = str(result[0][0]) + NUC[result[1][0]]
+                    df_i = df_poly[df_poly['polymorphic_index'] == result[0][0]]
+                    variant_name = str(variant) + '(' 
+                    if pd.notna(df_i.iloc[0]['epitope']):
+                        epi = df_i.iloc[0]['epitope']
+                        variant_name += str(epi[0]) + str(epi[-1]) + str(len(epi)) + ', '
+                    if df_i.iloc[0]['TF'] == NUC[result[1][0]]:
+                        variant_name += 'WT)'
+                    else:
+                        variant_name += ')'
+                    variants_name.append(variant_name)
+
+        # Trait part
+        for i in range(ne):
+            if i != n and np.array_equal(x_all[x_length-ne+n], x_all[x_length-ne+i]):
+                n_index.append(x_length-ne+i)
+                variants_name.append(epinames[i])
+
+        # epitope it self
+        n_index.append(x_length-ne+n)
+
+        n_length = len(n_index)
+        x_n = x[:,n_index]   # single allele frequency
+        xx_n  = np.zeros((len(nVec),n_length,n_length))  # pair allele frequency
+        for t in range(len(nVec)):
+            xx_t = xx[t]
+            xx_n[t] = xx_t[np.ix_(n_index, n_index)]
+
+        C_int = np.zeros((n_length,n_length))
+        for t in range(1, len(x_n)):
+            diffusion_matrix_at_t(x_n[t-1], x_n[t], xx_n[t-1], xx_n[t], 9e6, C_int)
+
+        # ## print the output to check manually
+        if len(variants_name) > 0:
+            print(f'CH{tag[-5:]} {epinames[n]}\n{variants_name}\n{C_int}',end='\n')
+
 
 def determine_dependence(tag):
 
@@ -448,11 +556,6 @@ def determine_dependence(tag):
 
     # information for escape group
     seq_length   = len(seq[0])-2
-    times = []
-    for i in range(len(seq)):
-        times.append(seq[i][0])
-    sample_times = np.unique(times)
-
     ne           = len(escape_group)
     
     if ne == 0:
@@ -465,70 +568,81 @@ def determine_dependence(tag):
 
     # get all frequencies, 
     # x: single allele frequency, xx: pair allele frequency
-    x,xx         = get_allele_frequency(sVec,nVec,eVec,muVec,x_length)
-    C_int = np.zeros((x_length,x_length))
-        
-    for t in range(1, len(sample_times)):
-        dt = sample_times[t]-sample_times[t-1]
-        diffusion_matrix_at_t(x[t-1], x[t], xx[t-1], xx[t], dt, C_int)
+    x,xx  = get_allele_frequency(sVec,nVec,eVec,muVec,x_length)
 
-    for i in range(x_length):
-        for j in range(x_length):
-            if abs(C_int[i][j]) < 1e-10:
-                C_int[i][j] = 0
+    C_int = np.zeros((x_length,x_length))
+    for t in range(1,len(x)):
+        diffusion_matrix_at_t(x[t-1], x[t], xx[t-1], xx[t], 9e6, C_int)
     
-    # save the covariance matrix into a temporary file with 6 significant figures
-    np.savetxt('temp_cov.np.dat',C_int,fmt='%.6e')
+    # # Calculate the reduced row echelon form of the covariance matrix
+    # sympy_matrix = Matrix(C_int)
+    # rref_matrix, pivots = sympy_matrix.rref()
+    # co_rr = np.array(rref_matrix).astype(float)
+
+    # save the covariance matrix into a temporary file with integer
+    np.savetxt('temp_cov.np.dat',C_int,fmt='%d')
 
     # run the c++ code to get the reduced row echelon form
     status = subprocess.run('./rref.out', shell=True)
 
     # load the reduced row echelon form
     co_rr = np.loadtxt('temp_rref.np.dat')
-
+    ll = len(co_rr)
+    
     # delete the temporary files
     status = subprocess.run('rm temp_*.dat', shell=True)
 
-    ll = len(co_rr)
+    pivots = []
+    for row in range(ll):
+        for col in range(ll):
+            if co_rr[row, col] != 0:
+                pivots.append(col)
+                break
+
     df_poly   = pd.read_csv('%s/interim/%s-poly.csv'%(HIV_DIR,tag), memory_map=True)
 
     Independent = [True] * ne
-
-    for n in range(ne):
-        co_rr_c = list(co_rr.T[ll-ne+n])
-        
-        pivot = co_rr_c.index(np.sum(co_rr_c))
     
-        if np.sum(abs(co_rr[pivot])) > 1:
-            print(f'CH{tag[-5:]} : trait {epinames[n]}, linked variants:', end=' ')
-            Independent[n] = False
-            for i in range(len(co_rr[pivot])):
-                if co_rr[pivot][i] != 0:
-                    if i < ll-ne:
-                        result = np.where(muVec == i)
-                        variant = str(result[0][0]) + NUC[result[1][0]]
-                        df_i = df_poly[df_poly['polymorphic_index'] == result[0][0]]
-                        
-                        if pd.notna(df_i.iloc[0]['epitope']):
-                            epi = df_i.iloc[0]['epitope']
-                            print(f'{variant}({epi[0]}{epi[-1]}{len(epi)}', end='')
-                        else:
-                            print(f'{variant}(', end='')
-                            
-                        if df_i.iloc[0]['TF'] == NUC[result[1][0]]:
-                            print(f', WT)', end=', ')
-                        else:
-                            print(f')', end=', ')
-                            
-                    else:
-                        nn = i - ll
-                        print(f'{epinames[nn]}', end=', ')
-            print()
+    for n in range(ne):
+        column_index = ll-ne+n
+        if column_index not in pivots:
             
+            Independent[n] = False
+            print(f'CH{tag[-5:]} : trait {epinames[n]}, linked variants:', end=' ')
+            
+            '''find the linked variants'''
+            related_columns = []
+            for row in range(ll):
+                # if the target column has a non-zero value in the current row, and the pivot column of this row is related
+                if co_rr[row, column_index] != 0:
+                    related_columns.append(pivots[row])
+
+            for i in related_columns:
+                if i < ll-ne:
+                    result = np.where(muVec == i)
+                    variant = str(result[0][0]) + NUC[result[1][0]]
+                    df_i = df_poly[df_poly['polymorphic_index'] == result[0][0]]
+                    
+                    if pd.notna(df_i.iloc[0]['epitope']):
+                        epi = df_i.iloc[0]['epitope']
+                        print(f'{variant}({epi[0]}{epi[-1]}{len(epi)}', end='')
+                    else:
+                        print(f'{variant}(', end='')
+                        
+                    if df_i.iloc[0]['TF'] == NUC[result[1][0]]:
+                        print(f', WT)', end=', ')
+                    else:
+                        print(f')', end=', ')
+                            
+                else:
+                    nn = i - ll + ne
+                    print(f'{epinames[nn]}', end=', ')
+            print()
 
     "store the information for trait sites into files (trait site and TF trait sequences)"
     f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
     g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
+    ff = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
 
     for n in range(ne):
         if Independent[n]:
@@ -544,7 +658,6 @@ def determine_dependence(tag):
 
     "store the information for trait sites into files (the number of normal sites between 2 trait sites)"
     df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic'])
-    f = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
     for i in range(len(escape_group)):
         if Independent[i]:
             i_dis = []
@@ -552,9 +665,181 @@ def determine_dependence(tag):
                 index0 = df_sequence[df_sequence['polymorphic']==escape_group[i][j]].iloc[0].alignment
                 index1 = df_sequence[df_sequence['polymorphic']==escape_group[i][j+1]].iloc[0].alignment
                 i_dis.append(int(index1-index0))
-            f.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
-    f.close()
+            ff.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
+    ff.close()
 
+def determine_dependence_new(tag):
+
+    # obtain raw sequence data
+    seq     = np.loadtxt('%s/input/sequence/%s-poly-seq2state.dat'%(HIV_DIR,tag))
+    escape_group, escape_TF, epinames = get_trait(tag)
+
+    # information for escape group
+    seq_length   = len(seq[0])-2
+    ne           = len(escape_group)
+    
+    if ne == 0:
+        f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
+        g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
+        ff = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
+        f.close()
+        g.close()
+        ff.close()
+        return
+    
+    # obtain sequence data and frequencies
+    sVec,nVec,eVec = getSequence(seq,escape_TF,escape_group)
+    x_length,muVec = getMutantS(seq_length, sVec)
+    x_length      += ne
+
+    # get all frequencies, 
+    # x: single allele frequency, xx: pair allele frequency
+    x,xx         = get_allele_frequency(sVec,nVec,eVec,muVec,x_length)
+
+    df_poly   = pd.read_csv('%s/interim/%s-poly.csv'%(HIV_DIR,tag), memory_map=True)
+
+    Independent = [True] * ne
+
+    for n in range(ne):
+        
+        n_index = []
+        # mutation inside this epitope
+        for nn in escape_group[n]:
+            df_i = df_poly[df_poly['polymorphic_index'] == nn]
+            for ii in range(len(df_i)):
+                if df_i.iloc[ii].escape == True:
+                    n_index.append(int(muVec[nn][NUC.index(df_i.iloc[ii].nucleotide)]))
+        n_mutations = len(n_index)
+        
+        # mutation has the same frequency with the binary trait
+        x_all = x.T
+        variants_name = []
+
+        # Individual locus part
+        for i in range(len(x_all)-ne):
+            if np.array_equal(x_all[i], x_all[x_length-ne+n]) or np.array_equal(x_all[i]+x_all[x_length-ne+n], np.ones(len(x))):
+                
+                if i not in n_index: # make sure the variant is outside this epitope
+                    n_index.append(i)
+                    
+                    # find the variant name
+                    result = np.where(muVec == i)
+                    variant = str(result[0][0]) + NUC[result[1][0]]
+                    df_i = df_poly[df_poly['polymorphic_index'] == result[0][0]]
+                    variant_name = str(variant)+'('
+                    
+                    if pd.notna(df_i.iloc[0]['epitope']):
+                        epi = df_i.iloc[0]['epitope']
+                        variant_name += str(epi[0]) + str(epi[-1]) + str(len(epi)) + ', '
+
+                    if df_i.iloc[0]['TF'] == NUC[result[1][0]]:
+                        variant_name += 'WT)'
+                    else:
+                        variant_name += ')'
+
+                    variants_name.append(variant_name)
+
+        # Trait part
+        for i in range(ne):
+            if i != n and np.array_equal(x_all[x_length-ne+n], x_all[x_length-ne+i]):
+                n_index.append(x_length-ne+i)
+                variants_name.append(epinames[i])
+
+        # epitope it self
+        n_index.append(x_length-ne+n)
+
+        n_length = len(n_index)
+        x_n = x[:,n_index]   # single allele frequency
+        xx_n  = np.zeros((len(nVec),n_length,n_length))  # pair allele frequency
+        for t in range(len(nVec)):
+            xx_t = xx[t]
+            xx_n[t] = xx_t[np.ix_(n_index, n_index)]
+
+        C_int = np.zeros((n_length,n_length))
+        for t in range(1, len(x_n)):
+            diffusion_matrix_at_t(x_n[t-1], x_n[t], xx_n[t-1], xx_n[t], 9e6, C_int)
+
+        # save the covariance matrix into a temporary file with 6 significant figures
+        # np.savetxt('temp_cov.np.dat',C_int,fmt='%d')
+
+        # # run the c++ code to get the reduced row echelon form
+        # status = subprocess.run('./rref.out', shell=True)
+
+        # # load the reduced row echelon form
+        # co_rr = np.loadtxt('temp_rref.np.dat')
+        # ll = len(co_rr)
+        
+        # # delete the temporary files
+        # status = subprocess.run('rm temp_*.dat', shell=True)
+
+        # pivots = []
+        # for row in range(ll):
+        #     for col in range(ll):
+        #         if co_rr[row, col] != 0:
+        #             pivots.append(col)
+        #             break
+
+        # Calculate the reduced row echelon form of the covariance matrix
+        sympy_matrix = Matrix(C_int)
+        sympy_matrix = sympy_matrix.applyfunc(nsimplify)
+        rref_matrix, pivots = sympy_matrix.rref()
+        co_rr = np.array(rref_matrix).astype(float)
+
+        # ## print the output to check manually
+        # print(f'{epinames[n]}\n{variants_name}\n{C_int}',end='\n')
+
+        column_index = n_length-1
+        if column_index not in pivots:
+            Independent[n] = False
+            print(f'CH{tag[-5:]} : trait {epinames[n]}, ({n_mutations} NS), linked variants:', end=' ')
+
+            '''find the linked variants'''
+            related_columns = []
+            for row in range(n_length):
+                # if the target column has a non-zero value in the current row, and the pivot column of this row is related
+                if co_rr[row, column_index] != 0:
+                    related_columns.append(pivots[row])
+
+            for i in related_columns:
+                if i < n_mutations:
+                    site   = n_index[i]
+                    result = np.where(muVec == site)
+                    variant = str(result[0][0]) + NUC[result[1][0]]
+                    print(f'{variant}', end=', ')
+                elif i == n_length-1:
+                    print(f'{epinames[n]}', end=', ')
+                else:
+                    print(f'{variants_name[i-n_mutations]}', end=', ')
+            print()
+
+    "store the information for trait sites into files (trait site and TF trait sequences)"
+    f = open('%s/input/traitsite/traitsite-%s.dat'%(HIV_DIR,tag), 'w')
+    g = open('%s/input/traitseq/traitseq-%s.dat'%(HIV_DIR,tag), 'w')
+    ff = open('%s/input/traitdis/traitdis-%s.dat'%(HIV_DIR,tag), 'w')
+
+    for n in range(ne):
+        if Independent[n]:
+            f.write('%s\n'%'\t'.join([str(i) for i in escape_group[n]]))
+            for m in range(len(escape_group[n])):
+                if m != len(escape_group[n]) - 1:
+                    g.write('%s\t'%'/'.join([str(i) for i in escape_TF[n][m]]))
+                else:
+                    g.write('%s'%'/'.join([str(i) for i in escape_TF[n][m]]))
+            g.write('\n')
+    f.close()
+    g.close()
+
+    "store the information for trait sites into files (the number of normal sites between 2 trait sites)"
+    df_sequence = pd.read_csv('%s/notrait/processed/%s-index.csv' %(HIV_DIR,tag), comment='#', memory_map=True,usecols=['alignment','polymorphic'])
+    for i in range(len(escape_group)):
+        if Independent[i]:
+            i_dis = []
+            for j in range(len(escape_group[i])-1):
+                index0 = df_sequence[df_sequence['polymorphic']==escape_group[i][j]].iloc[0].alignment
+                index1 = df_sequence[df_sequence['polymorphic']==escape_group[i][j+1]].iloc[0].alignment
+                i_dis.append(int(index1-index0))
+            ff.write('%s\n'%'\t'.join([str(i) for i in i_dis]))
+    ff.close()
 
 def get_independent():
     
