@@ -350,11 +350,22 @@ def plot_example_mpl(**pdata):
                 mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[c_coe1[k]], \
                 facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
         
-            else:
+    plotprops['lw'] = SIZELINE*1.5
+    for k in merged_trait: 
 
-                plotprops['lw'] = SIZELINE*1.5
-                mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[BKCOLOR], \
-                facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)    
+        if k < n_coe1[0]:
+            kk = 0
+        elif k < n_coe1[0]+n_coe1[1]:
+            kk = 1
+        else:
+            kk = 2
+
+        xdat = [kk + np.random.normal(0, 0.08)]
+        ydat = [s_inf[k]]
+        yerr = np.sqrt(ds[k][k])
+        
+        mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[BKCOLOR], \
+        facecolor=[c_coe1_lt[kk]], plotprops=plotprops, **pprops)    
 
     coef_legend_x  =  2.8
     coef_legend_d  = -0.15
@@ -3375,20 +3386,49 @@ def plot_example_tv(**pdata):
                'axoffset':    0.1,
                'theme':       'open' }
 
-    xdat = [range(0, n_gen, dg) for k in range(n_ben)]
-    ydat = [k for k in x[:n_ben]]
-    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_BEN_LT for k in range(len(x))], **pprops)
+    merged_trait_site = [item for sublist in trait_site for item in sublist]
+    merged_trait      = sorted(merged_trait_site)
+    for k in range(n_ben+n_neu+n_del):
+        xdat = range(0, n_gen, dg)
+        ydat = x[k]
 
-    xdat = [range(0, n_gen, dg) for k in range(n_del)]
-    ydat = [k for k in x[n_ben+n_neu:]]
-    mp.line(ax=ax_tra1, x=xdat, y=ydat, colors=[C_DEL_LT for k in range(len(x))], **pprops)
+        if k not in merged_trait:
+            pprops['plotprops']['alpha'] = 1.0
+            if k < n_ben:
+                color_k = C_BEN_LT
+            elif k > n_ben+n_neu:
+                color_k = C_DEL_LT
+            else:
+                color_k = C_NEU
+                pprops['plotprops']['alpha'] = 0.4
 
-    xdat = [range(0, n_gen, dg) for k in range(n_neu)]
-    ydat = [k for k in x[n_ben:n_ben+n_neu]]
-    pprops['plotprops']['alpha'] = 0.4
-    mp.plot(type='line',ax=ax_tra1, x=xdat, y=ydat, colors = [C_NEU for k in range(len(x))], **pprops)
+        mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
 
-    ax_tra1.text(box_tra1['left']+dx, box_tra1['top']+dy, 'a'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
+    for k in merged_trait:
+        xdat = range(0, n_gen, dg)
+        ydat = x[k]
+        
+        pprops['plotprops']['alpha'] = 1.0
+        pprops['plotprops']['lw'] = SIZELINE*2.0
+
+        if k < n_ben:
+            color_k = C_BEN_LT
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[BKCOLOR], **pprops)
+        elif k > n_ben+n_neu:
+            color_k = C_DEL_LT
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[BKCOLOR], **pprops)
+        else:
+            color_k = C_NEU
+            pprops['plotprops']['alpha'] = 0.6
+            outline_color = '#505050'
+            mp.line(ax=ax_tra1, x=[xdat], y=[ydat], colors=[outline_color], **pprops)
+            pprops['plotprops']['alpha'] = 0.4
+
+        pprops['plotprops']['lw'] = SIZELINE
+        if k == merged_trait[-1]:
+            mp.plot(type='line',ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
+        else:
+            mp.line(            ax=ax_tra1, x=[xdat], y=[ydat], colors=[color_k], **pprops)
 
     # b -- all trait trajectories together
     pprops = { 'xticks':      [0, 200, 400, 600, 800,1000],
@@ -3436,7 +3476,6 @@ def plot_example_tv(**pdata):
 
     ## c -- individual beneficial/neutral/deleterious selection coefficients
 
-    sprops = { 'lw' : 0, 's' : 9., 'marker' : 'o' }
     pprops = { 'xlim':        [ -0.3,    4],
                'ylim':        [-0.05, 0.04],
                'yticks':      [-0.04, 0, 0.04],
@@ -3457,16 +3496,34 @@ def plot_example_tv(**pdata):
         colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
         plotprops = DEF_ERRORPROPS.copy()
         plotprops['alpha'] = 1
+        
         for i in range(n_coe1[k]):
             xdat = [k + np.random.normal(0, 0.08)]
             ydat = [s_inf[offset[k]+i]]
             yerr = np.sqrt(ds[offset[k]+i][offset[k]+i])
-            if i==n_coe1[k]-1 and k==len(n_coe1)-1:
-                mp.plot(type='error', ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], \
-                edgecolor=[c_coe1[k]], facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
-            else:
+            
+            if (offset[k]+i) not in merged_trait:
+                
+                plotprops['lw'] = SIZELINE
                 mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[c_coe1[k]], \
                 facecolor=[c_coe1_lt[k]], plotprops=plotprops, **pprops)
+
+    plotprops['lw'] = SIZELINE*1.5
+    for k in merged_trait: 
+
+        if k < n_coe1[0]:
+            kk = 0
+        elif k < n_coe1[0]+n_coe1[1]:
+            kk = 1
+        else:
+            kk = 2
+
+        xdat = [kk + np.random.normal(0, 0.08)]
+        ydat = [s_inf[k]]
+        yerr = np.sqrt(ds[k][k])
+        
+        mp.error(ax=ax_coe1, x=[xdat], y=[ydat], yerr=[yerr], edgecolor=[BKCOLOR], \
+        facecolor=[c_coe1_lt[kk]], plotprops=plotprops, **pprops)    
 
     coef_legend_x  =  2.8
     coef_legend_d  = -0.15
@@ -3482,6 +3539,11 @@ def plot_example_tv(**pdata):
     mp.line(ax=ax_coe1, x=[[coef_legend_x-0.21, coef_legend_x-0.09]], y=[[yy, yy]], \
     colors=[BKCOLOR], plotprops=dict(lw=SIZELINE, ls=':'), **pprops)
     ax_coe1.text(coef_legend_x, yy, 'True \ncoefficient', ha='left', va='center', **DEF_LABELPROPS)
+
+    yyy = 0.02 + 5.0 * coef_legend_dy
+    mp.plot(type='error', ax=ax_coe1, x=[[coef_legend_x+coef_legend_d]], y=[[yyy]], \
+                 edgecolor=[BKCOLOR], facecolor=['#FFFFFF'], plotprops=plotprops, **pprops)
+    ax_coe1.text(coef_legend_x, yyy, 'Trait mutation', ha='left', va='center', **DEF_LABELPROPS)
 
     ax_coe1.text(box_coe1['left']+dx, box_coe1['top']+0.04, 'c'.lower(), transform=fig.transFigure, **DEF_SUBLABELPROPS)
 
